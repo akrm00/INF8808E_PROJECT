@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grouped Bar Chart - DEI Scores by Demographics | The DEI Lens</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/visualization3.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body class="viz-page">
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb">
+        <div class="breadcrumb-container">
+            <a href="main.html">Home</a>
+            <span class="separator">></span>
+            <span>Visualization 3</span>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="viz-header">
+        <div class="container">
+            <h1>Grouped Bar Chart - DEI Scores by Demographics</h1>
+            <p>Compare DEI perceptions across demographic groups through interactive grouped bar charts</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="viz-content">
+        <div class="questions-panel">
+            <h3>Questions Analyzed</h3>
+            <div class="question-list">
+                <div class="question-item">
+                    <strong>5 (☆☆☆)</strong> Are there significant differences in diversity scores (Aug_D_Qx) across genders?
+                </div>
+                <div class="question-item">
+                    <strong>6 (☆☆☆)</strong> What about between ethnic groups, LGBTQ+ individuals, people with disabilities, or Indigenous employees?
+                </div>
+                <div class="question-item">
+                    <strong>7 (☆☆)</strong> Which groups show the lowest diversity scores?
+                </div>
+                <div class="question-item">
+                    <strong>9 (☆☆☆)</strong> Which groups perceive the least equity (based on E_Negative scores)?
+                </div>
+                <div class="question-item">
+                    <strong>13 (☆☆)</strong> Which groups show high I_Negative inclusion scores?
+                </div>
+            </div>
+        </div>
+
+        <div class="main-viz">
+            <div class="demographic-tabs">
+                <button class="tab-btn active" data-demographic="Gender">Gender</button>
+                <button class="tab-btn" data-demographic="Ethnicity">Ethnicity</button>
+                <button class="tab-btn" data-demographic="LGBTQ">LGBTQ+</button>
+                <button class="tab-btn" data-demographic="Disability">Disability</button>
+                <button class="tab-btn" data-demographic="Veteran">Veteran</button>
+                <button class="tab-btn" data-demographic="Indigenous">Indigenous</button>
+            </div>
+
+            <div class="chart-controls">
+                <div class="view-toggle">
+                    <button class="toggle-btn active" data-view="positive">Positive Scores</button>
+                    <button class="toggle-btn" data-view="negative">Negative Scores</button>
+                </div>
+                <div class="sort-controls">
+                    <label for="sort-select">Sort by:</label>
+                    <select id="sort-select">
+                        <option value="alphabetical">Alphabetical</option>
+                        <option value="diversity">Diversity Score</option>
+                        <option value="equity">Equity Score</option>
+                        <option value="inclusion">Inclusion Score</option>
+                        <option value="overall">Overall Average</option>
+                    </select>
+                    <button id="sort-order" data-order="desc">↓ Desc</button>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <svg class="bar-chart" width="700" height="450"></svg>
+                <div class="chart-legend"></div>
+            </div>
+        </div>
+
+        <div class="controls-panel">
+            <div class="stats-panel">
+                <h3>Statistics</h3>
+                <div class="stat-item">
+                    <span>Current Group:</span>
+                    <span id="current-group">Gender</span>
+                </div>
+                <div class="stat-item">
+                    <span>Categories:</span>
+                    <span id="category-count">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Avg Diversity:</span>
+                    <span id="avg-diversity">0.00</span>
+                </div>
+                <div class="stat-item">
+                    <span>Avg Equity:</span>
+                    <span id="avg-equity">0.00</span>
+                </div>
+                <div class="stat-item">
+                    <span>Avg Inclusion:</span>
+                    <span id="avg-inclusion">0.00</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
+
+            <div class="filters-section">
+                <h3>Filters</h3>
+                
+                <div class="filter-group">
+                    <h4>Score Range</h4>
+                    <label for="score-min">Range: <span id="score-range">-2.0 to 2.0</span></label>
+                    <div class="score-slider">
+                        <input type="range" id="score-min" min="-2" max="2" step="0.1" value="-2">
+                        <input type="range" id="score-max" min="-2" max="2" step="0.1" value="2">
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h4>DEI Dimensions</h4>
+                    <div class="filter-item">
+                        <input type="checkbox" id="show-diversity" checked data-dimension="diversity">
+                        <label for="show-diversity">Diversity</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="show-equity" checked data-dimension="equity">
+                        <label for="show-equity">Equity</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="show-inclusion" checked data-dimension="inclusion">
+                        <label for="show-inclusion">Inclusion</label>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h4>Sample Size Filter</h4>
+                    <label for="min-sample">Min Sample: <span id="min-sample-value">1</span></label>
+                    <input type="range" id="min-sample" min="1" max="100" value="1">
+                </div>
+
+                <div class="filter-group">
+                    <h4>Data Options</h4>
+                    <div class="filter-item">
+                        <input type="checkbox" id="show-error-bars" data-option="error-bars">
+                        <label for="show-error-bars">Show Error Bars</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="show-sample-size" checked data-option="sample-size">
+                        <label for="show-sample-size">Show Sample Size</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script src="scripts/visualization3.js"></script>
+</body>
+</html>

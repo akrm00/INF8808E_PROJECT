@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scatter Plot Matrix - Intersectional Analysis | The DEI Lens</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/visualization4.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body class="viz-page">
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb">
+        <div class="breadcrumb-container">
+            <a href="main.html">Home</a>
+            <span class="separator">></span>
+            <span>Visualization 4</span>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="viz-header">
+        <div class="container">
+            <h1>Scatter Plot Matrix - Intersectional Analysis</h1>
+            <p>Discover patterns of multiple marginalization through interactive scatter plot matrix visualization</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="viz-content">
+        <div class="questions-panel">
+            <h3>Questions Analyzed</h3>
+            <div class="question-list">
+                <div class="question-item">
+                    <strong>14 (☆☆☆)</strong> How do intersectional identities correlate with DEI perception scores?
+                </div>
+                <div class="question-item">
+                    <strong>15 (☆☆☆)</strong> Which groups experience multiple layers of marginalization (e.g., minority + LGBTQ + disability)?
+                </div>
+                <div class="question-item">
+                    <strong>17 (☆☆)</strong> Are there patterns in intersectional discrimination across different demographic combinations?
+                </div>
+            </div>
+        </div>
+
+        <div class="main-viz">
+            <div class="matrix-controls">
+                <div class="dimension-selector">
+                    <label>Matrix Dimensions:</label>
+                    <select id="x-dimension">
+                        <option value="Age">Age</option>
+                        <option value="D_Positive" selected>Diversity Score</option>
+                        <option value="E_Positive">Equity Score</option>
+                        <option value="I_Positive">Inclusion Score</option>
+                        <option value="Marginalization_Count">Marginalization Level</option>
+                    </select>
+                    <span>vs</span>
+                    <select id="y-dimension">
+                        <option value="Age">Age</option>
+                        <option value="D_Positive">Diversity Score</option>
+                        <option value="E_Positive" selected>Equity Score</option>
+                        <option value="I_Positive">Inclusion Score</option>
+                        <option value="Marginalization_Count">Marginalization Level</option>
+                    </select>
+                </div>
+                
+                <div class="view-controls">
+                    <button class="control-btn" id="reset-zoom">Reset Zoom</button>
+                    <button class="control-btn" id="toggle-zoom">Enable Zoom</button>
+                    <button class="control-btn" id="toggle-correlation">Show Correlation</button>
+                </div>
+            </div>
+
+            <div class="scatter-container">
+                <svg class="scatter-matrix" width="700" height="500"></svg>
+                <div class="matrix-legend"></div>
+            </div>
+        </div>
+
+        <div class="controls-panel">
+            <div class="stats-panel">
+                <h3>Statistics</h3>
+                <div class="stat-item">
+                    <span>Total Employees:</span>
+                    <span id="total-employees">10,000</span>
+                </div>
+                <div class="stat-item">
+                    <span>Visible Points:</span>
+                    <span id="visible-points">10,000</span>
+                </div>
+                <div class="stat-item">
+                    <span>Correlation:</span>
+                    <span id="correlation-value">0.00</span>
+                </div>
+                <div class="stat-item">
+                    <span>High Marginalization:</span>
+                    <span id="high-margin-count">0</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
+
+            <div class="filters-section">
+                <h3>Intersectional Filters</h3>
+                
+                <div class="filter-group">
+                    <h4>Marginalization Level</h4>
+                    <label for="margin-level">Level: <span id="margin-range">0-5+</span></label>
+                    <div class="margin-slider">
+                        <input type="range" id="margin-min" min="0" max="5" value="0">
+                        <input type="range" id="margin-max" min="0" max="5" value="5">
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h4>Identity Groups</h4>
+                    <div class="filter-item">
+                        <input type="checkbox" id="lgbtq-filter" checked data-group="LGBTQ">
+                        <label for="lgbtq-filter">LGBTQ+</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="minority-filter" checked data-group="Minority">
+                        <label for="minority-filter">Ethnic Minority</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="disability-filter" checked data-group="Disability">
+                        <label for="disability-filter">Disability</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="indigenous-filter" checked data-group="Indigenous">
+                        <label for="indigenous-filter">Indigenous</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="veteran-filter" checked data-group="Veteran">
+                        <label for="veteran-filter">Veteran</label>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h4>Intersectional Combinations</h4>
+                    <div class="filter-item">
+                        <input type="checkbox" id="multiple-filter" data-combination="multiple">
+                        <label for="multiple-filter">Multiple Identities (2+)</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="triple-filter" data-combination="triple">
+                        <label for="triple-filter">Triple Marginalization (3+)</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="lgbtq-minority-filter" data-combination="lgbtq-minority">
+                        <label for="lgbtq-minority-filter">LGBTQ+ & Minority</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="disability-veteran-filter" data-combination="disability-veteran">
+                        <label for="disability-veteran-filter">Disability & Veteran</label>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h4>Age Range</h4>
+                    <label for="age-min">Age: <span id="age-range">24-65</span></label>
+                    <div class="age-slider">
+                        <input type="range" id="age-min" min="24" max="65" value="24">
+                        <input type="range" id="age-max" min="24" max="65" value="65">
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h4>Display Options</h4>
+                    <div class="filter-item">
+                        <input type="checkbox" id="show-trendline" data-option="trendline">
+                        <label for="show-trendline">Show Trend Line</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="size-by-margin" checked data-option="size-margin">
+                        <label for="size-by-margin">Size by Marginalization</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="highlight-outliers" data-option="outliers">
+                        <label for="highlight-outliers">Highlight Outliers</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script src="scripts/visualization4.js"></script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heatmap - DEI Perception Across Departments | The DEI Lens</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/visualization2.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body class="viz-page">
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb">
+        <div class="breadcrumb-container">
+            <a href="main.html">Home</a>
+            <span class="separator">></span>
+            <span>Visualization 2</span>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="viz-header">
+        <div class="container">
+            <h1>Heatmap - DEI Perception Across Departments</h1>
+            <p>Analyze DEI scores by department and management level through an interactive heatmap visualization</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="viz-content">
+        <div class="questions-panel">
+            <h3>Questions Analyzed</h3>
+            <div class="question-list">
+                <div class="question-item">
+                    <strong>2 (☆☆)</strong> Are certain groups underrepresented in specific departments or under certain managers?
+                </div>
+                <div class="question-item">
+                    <strong>4 (☆)</strong> Which departments are the most diverse?
+                </div>
+                <div class="question-item">
+                    <strong>8 (☆)</strong> Which departments receive the highest diversity scores?
+                </div>
+                <div class="question-item">
+                    <strong>11 (☆)</strong> Does perceived equity vary by division or manager?
+                </div>
+                <div class="question-item">
+                    <strong>16 (☆☆)</strong> Which departments perform well despite high diversity?
+                </div>
+            </div>
+        </div>
+
+        <div class="main-viz">
+            <div class="control-tabs">
+                <button class="tab-btn active" data-view="positive">Positive Scores</button>
+                <button class="tab-btn" data-view="negative">Negative Scores</button>
+                <button class="tab-btn" data-view="combined">Combined View</button>
+            </div>
+
+            <div class="heatmap-container">
+                <svg class="heatmap-chart" width="700" height="500"></svg>
+                <div class="color-legend"></div>
+            </div>
+        </div>
+
+        <div class="controls-panel">
+            <div class="stats-panel">
+                <h3>Statistics</h3>
+                <div class="stat-item">
+                    <span>Departments:</span>
+                    <span id="dept-count">7</span>
+                </div>
+                <div class="stat-item">
+                    <span>DEI Metrics:</span>
+                    <span id="metric-count">6</span>
+                </div>
+                <div class="stat-item">
+                    <span>Average Score:</span>
+                    <span id="avg-score">0.00</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
+
+            <div class="filters-section">
+                <h3>Filters</h3>
+                
+                <div class="filter-group">
+                    <h4>Management Level</h4>
+                    <div class="filter-item">
+                        <input type="checkbox" id="manager-true" checked data-filter="manager" data-value="true">
+                        <label for="manager-true">Managers</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="manager-false" checked data-filter="manager" data-value="false">
+                        <label for="manager-false">Non-Managers</label>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h4>DEI Dimensions</h4>
+                    <div class="filter-item">
+                        <input type="checkbox" id="diversity" checked data-filter="dimension" data-value="diversity">
+                        <label for="diversity">Diversity</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="equity" checked data-filter="dimension" data-value="equity">
+                        <label for="equity">Equity</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="inclusion" checked data-filter="dimension" data-value="inclusion">
+                        <label for="inclusion">Inclusion</label>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h4>Score Range</h4>
+                    <label for="score-min">Score: <span id="score-range">-2.0 to 2.0</span></label>
+                    <div class="score-slider">
+                        <input type="range" id="score-min" min="-2" max="2" step="0.1" value="-2">
+                        <input type="range" id="score-max" min="-2" max="2" step="0.1" value="2">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script src="scripts/visualization2.js"></script>
+</body>
+</html>
