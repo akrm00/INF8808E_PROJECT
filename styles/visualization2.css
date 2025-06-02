@@ -171,7 +171,7 @@
 }
 
 .tab-btn.active {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgb(41 40 40 / 74%);
     border-color: rgba(255, 255, 255, 0.4);
     color: #f9fafb;
 }
