@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Load and process data
 async function loadData() {
     try {
-        const rawData = await d3.csv('data/deidataset.csv');
+        const rawData = await d3.csv('./data/deidataset.csv');
         
         
         data = rawData.map(d => {

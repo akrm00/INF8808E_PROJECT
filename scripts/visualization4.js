@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadData() {
     try {
-        const rawData = await d3.csv('data/deidataset.csv');
+        const rawData = await d3.csv('./data/deidataset.csv');
         
         data = rawData.map(d => {
             const dPositive = calculateAverage([d.Aug_D_Q1, d.Aug_D_Q2, d.Aug_D_Q3, d.Aug_D_Q4, d.Aug_D_Q5]);
