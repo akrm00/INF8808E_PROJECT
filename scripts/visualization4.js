@@ -1,4 +1,4 @@
-const margin = { top: 40, right: 40, bottom: 120, left: 80 };
+const margin = { top: 40, right: 60, bottom: 150, left: 100 };
 const width = 700 - margin.left - margin.right;
 const height = 550 - margin.top - margin.bottom;
 
@@ -352,10 +352,11 @@ function createVisualization() {
         // Sample size label
         mainGroup.append('text')
             .attr('x', centerX)
-            .attr('y', height + 25)
+            .attr('y', height + 35)
             .attr('text-anchor', 'middle')
-            .attr('font-size', '10px')
-            .attr('fill', '#999')
+            .attr('font-size', '14px')
+            .attr('fill', '#d1d5db')
+            .attr('font-weight', '500')
             .text(`n=${groupData.length}`);
     });
 
@@ -368,10 +369,10 @@ function createVisualization() {
     // Rotate x-axis labels if needed
     xAxis.selectAll('text')
         .style('text-anchor', 'end')
-        .attr('dx', '-.8em')
-        .attr('dy', '2.5em')
+        .attr('dx', '-2em')
+        .attr('dy', '4em')
         .attr('transform', 'rotate(-45)')
-        .attr('fill', '#d1d5db')
+        .attr('fill', '#fff')
         .attr('font-size', '12px');
 
     const yAxis = mainGroup.append('g')
@@ -400,7 +401,7 @@ function createVisualization() {
         .text(getScoreLabel(currentScoreType));
 
     mainGroup.append('text')
-        .attr('transform', `translate(${width / 2}, ${height + margin.bottom - 10})`)
+        .attr('transform', `translate(${width / 2}, ${height + margin.bottom - 20})`)
         .style('text-anchor', 'middle')
         .attr('fill', '#f9fafb')
         .attr('font-size', '14px')

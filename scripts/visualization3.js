@@ -9,7 +9,6 @@ let heatmapData = [];
 let currentView = 'demographics';
 let currentMetric = 'negative';
 let activeGroups = ['gender', 'ethnicity', 'lgbtq', 'disability', 'veteran', 'indigenous', 'minority'];
-let minSampleSize = 5;
 let showValues = true;
 let showSampleCounts = false;
 
@@ -77,7 +76,7 @@ function createHeatmapData() {
             categories.forEach(category => {
                 const categoryData = data.filter(d => d[field] === category);
                 
-                if (categoryData.length >= minSampleSize) {
+                if (categoryData.length >= 1) {
                     const scores = categoryData.map(d => d[`equity_${currentMetric}`]).filter(s => !isNaN(s));
                     
                     if (scores.length > 0) {
@@ -109,7 +108,7 @@ function createHeatmapData() {
                 const divisionData = data.filter(d => d.division === division);
                 const scores = divisionData.map(d => d[`equity_${currentMetric}`]).filter(s => !isNaN(s));
                 
-                if (scores.length >= minSampleSize) {
+                if (scores.length >= 1) {
                     const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
                     
                     heatmapData.push({
@@ -148,7 +147,7 @@ function createHeatmapData() {
                 const managerData = data.filter(d => d.manager === manager);
                 const scores = managerData.map(d => d[`equity_${currentMetric}`]).filter(s => !isNaN(s));
                 
-                if (scores.length >= minSampleSize) {
+                if (scores.length >= 1) {
                     const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
                     
                     heatmapData.push({
@@ -204,15 +203,6 @@ function setupEventListeners() {
             updateVisualization();
             updateStats();
         });
-    });
-
-    // Sample size filter
-    document.getElementById('min-sample').addEventListener('input', function() {
-        minSampleSize = +this.value;
-        document.getElementById('min-sample-value').textContent = this.value;
-        createHeatmapData();
-        updateVisualization();
-        updateStats();
     });
 
     // Visualization options

@@ -297,7 +297,7 @@ function drawDemographicsOverview(g) {
         .attr('transform', `translate(0,${height})`)
         .call(d3.axisBottom(xScale))
         .selectAll('text')
-        .style('fill', '#d1d5db')
+        .style('fill', '#eaeef3')
         .style('font-size', '11px')
         .style('text-anchor', 'end')
         .attr('dx', '-.8em')
@@ -307,7 +307,7 @@ function drawDemographicsOverview(g) {
     g.append('g')
         .call(d3.axisLeft(yScale))
         .selectAll('text')
-        .style('fill', '#d1d5db')
+        .style('fill', '#eaeef3')
         .style('font-size', '12px');
 
     // Axis labels
@@ -317,14 +317,14 @@ function drawDemographicsOverview(g) {
         .attr('x', 0 - (height / 2))
         .attr('dy', '1em')
         .style('text-anchor', 'middle')
-        .style('fill', '#d1d5db')
+        .style('fill', '#eaeef3')
         .style('font-size', '11px')
         .text('Number of Employees');
 
     g.append('text')
-        .attr('transform', `translate(${width / 2}, ${height + margin.bottom - 10})`)
+        .attr('transform', `translate(${width / 2}, ${height + margin.bottom + 5})`)
         .style('text-anchor', 'middle')
-        .style('fill', '#d1d5db')
+        .style('fill', '#eaeef3')
         .style('font-size', '11px')
         .text(currentMetric);
 
@@ -338,7 +338,9 @@ function drawDemographicsOverview(g) {
         .style('font-weight', 'bold')
         .text(`Distribution by ${currentMetric}`);
 
-    updateLegend(metricValues, colorScale);
+    // Pass sorted values to legend so legend order matches chart order
+    const sortedMetricValues = data.map(d => d.key);
+    updateLegend(sortedMetricValues, colorScale);
 }
 
 // Draw by division (Questions 2 & 4)
@@ -415,7 +417,7 @@ function drawByDivision(g) {
         .attr('transform', `translate(0,${height})`)
         .call(d3.axisBottom(x0Scale))
         .selectAll('text')
-        .style('fill', '#d1d5db')
+        .style('fill', '#eaeef3')
         .style('font-size', '12px')
         .style('text-anchor', 'end')
         .attr('dx', '-.8em')
@@ -425,7 +427,7 @@ function drawByDivision(g) {
     g.append('g')
         .call(d3.axisLeft(yScale))
         .selectAll('text')
-        .style('fill', '#d1d5db')
+        .style('fill', '#eaeef3')
         .style('font-size', '12px');
 
     // Axis labels
@@ -435,14 +437,14 @@ function drawByDivision(g) {
         .attr('x', 0 - (height / 2))
         .attr('dy', '1em')
         .style('text-anchor', 'middle')
-        .style('fill', '#d1d5db')
+        .style('fill', '#eaeef3')
         .style('font-size', '11px')
         .text('Number of Employees');
 
     g.append('text')
-        .attr('transform', `translate(${width / 2}, ${height + margin.bottom - 10})`)
+        .attr('transform', `translate(${width / 2}, ${height + margin.bottom + 5})`)
         .style('text-anchor', 'middle')
-        .style('fill', '#d1d5db')
+        .style('fill', '#eaeef3')
         .style('font-size', '11px')
         .text('Division');
 
@@ -533,13 +535,13 @@ function drawByAgeGroup(g) {
         .attr('transform', `translate(0,${height})`)
         .call(d3.axisBottom(x0Scale))
         .selectAll('text')
-        .style('fill', '#d1d5db')
+        .style('fill', '#eaeef3')
         .style('font-size', '12px');
 
     g.append('g')
         .call(d3.axisLeft(yScale))
         .selectAll('text')
-        .style('fill', '#d1d5db')
+        .style('fill', '#eaeef3')
         .style('font-size', '12px');
 
     // Axis labels
@@ -549,14 +551,14 @@ function drawByAgeGroup(g) {
         .attr('x', 0 - (height / 2))
         .attr('dy', '1em')
         .style('text-anchor', 'middle')
-        .style('fill', '#d1d5db')
+        .style('fill', '#eaeef3')
         .style('font-size', '11px')
         .text('Number of Employees');
 
     g.append('text')
-        .attr('transform', `translate(${width / 2}, ${height + margin.bottom - 10})`)
+        .attr('transform', `translate(${width / 2}, ${height + margin.bottom + 5})`)
         .style('text-anchor', 'middle')
-        .style('fill', '#d1d5db')
+        .style('fill', '#eaeef3')
         .style('font-size', '11px')
         .text('Age Group');
 
@@ -655,7 +657,7 @@ function drawDiversityIndex(g) {
         .attr('transform', `translate(0,${height})`)
         .call(d3.axisBottom(xScale))
         .selectAll('text')
-        .style('fill', '#d1d5db')
+        .style('fill', '#eaeef3')
         .style('font-size', '12px')
         .style('text-anchor', 'end')
         .attr('dx', '-.8em')
@@ -665,7 +667,7 @@ function drawDiversityIndex(g) {
     g.append('g')
         .call(d3.axisLeft(yScale))
         .selectAll('text')
-        .style('fill', '#d1d5db')
+        .style('fill', '#eaeef3')
         .style('font-size', '12px');
 
     // Axis labels
@@ -675,14 +677,14 @@ function drawDiversityIndex(g) {
         .attr('x', 0 - (height / 2))
         .attr('dy', '1em')
         .style('text-anchor', 'middle')
-        .style('fill', '#d1d5db')
+        .style('fill', '#eaeef3')
         .style('font-size', '11px')
         .text('Diversity Score (%)');
 
     g.append('text')
-        .attr('transform', `translate(${width / 2}, ${height + margin.bottom - 10})`)
+        .attr('transform', `translate(${width / 2}, ${height + margin.bottom + 5})`)
         .style('text-anchor', 'middle')
-        .style('fill', '#d1d5db')
+        .style('fill', '#eaeef3')
         .style('font-size', '11px')
         .text('Division');
 

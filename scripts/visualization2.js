@@ -8,7 +8,6 @@ let data = [];
 let currentView = 'gender';
 let currentScoreType = 'diversity';
 let activeDepartments = [];
-let minGroupSize = 5;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
@@ -105,14 +104,6 @@ function setupEventListeners() {
         });
         updateVisualization();
     });
-
-    // Minimum group size slider
-    const groupSizeSlider = document.getElementById('min-group-size');
-    groupSizeSlider.addEventListener('input', function() {
-        minGroupSize = +this.value;
-        document.getElementById('min-size-value').textContent = minGroupSize;
-        updateVisualization();
-    });
 }
 
 // Get filtered data based on current filters
@@ -163,29 +154,27 @@ function aggregateData() {
     // Calculate averages and filter by minimum group size
     const aggregated = [];
     groupedData.forEach((employees, group) => {
-        if (employees.length >= minGroupSize) {
-            let score;
-            switch(currentScoreType) {
-                case 'diversity':
-                    score = employees.reduce((sum, emp) => sum + emp.diversityAvg, 0) / employees.length;
-                    break;
-                case 'positive':
-                    score = employees.reduce((sum, emp) => sum + emp.diversityPositive, 0) / employees.length;
-                    break;
-                case 'negative':
-                    score = employees.reduce((sum, emp) => sum + emp.diversityNegative, 0) / employees.length;
-                    break;
-                default:
-                    score = 0;
-            }
-            
-            aggregated.push({
-                group: group,
-                score: score,
-                count: employees.length,
-                employees: employees
-            });
+        let score;
+        switch(currentScoreType) {
+            case 'diversity':
+                score = employees.reduce((sum, emp) => sum + emp.diversityAvg, 0) / employees.length;
+                break;
+            case 'positive':
+                score = employees.reduce((sum, emp) => sum + emp.diversityPositive, 0) / employees.length;
+                break;
+            case 'negative':
+                score = employees.reduce((sum, emp) => sum + emp.diversityNegative, 0) / employees.length;
+                break;
+            default:
+                score = 0;
         }
+        
+        aggregated.push({
+            group: group,
+            score: score,
+            count: employees.length,
+            employees: employees
+        });
     });
 
     // Sort by score descending

@@ -123,16 +123,6 @@ class IntersectionalAnalysis {
         d3.selectAll('.filter-item input[type="checkbox"]').on('change', () => {
             this.updateVisualization();
         });
-        
-        d3.select('#min-size').on('input', (event) => {
-            d3.select('#min-size-value').text(event.target.value);
-            this.updateVisualization();
-        });
-        
-        d3.select('#score-threshold').on('input', (event) => {
-            d3.select('#threshold-value').text(event.target.value);
-            this.updateVisualization();
-        });
     }
     
     getFilteredData() {
@@ -161,7 +151,7 @@ class IntersectionalAnalysis {
     
     getIntersectionalGroups() {
         const data = this.getFilteredData();
-        const minSize = +d3.select('#min-size').node().value;
+        const minSize = 5; // Fixed minimum size
         
         // Create intersectional identity combinations
         const groups = d3.group(data, d => {
@@ -200,7 +190,7 @@ class IntersectionalAnalysis {
     
     getDepartmentPerformance() {
         const data = this.getFilteredData();
-        const minSize = +d3.select('#min-size').node().value;
+        const minSize = 5; // Fixed minimum size
         
         const departments = d3.group(data, d => d.Division);
         const result = [];
@@ -400,8 +390,7 @@ class IntersectionalAnalysis {
     }
     
     updateStatistics(data) {
-        const threshold = +d3.select('#score-threshold').node().value;
-        const criticalGroups = data.filter(d => (d.score || d.y) < threshold);
+        const criticalGroups = data.filter(d => (d.score || d.y) < -0.5); // Fixed threshold of -0.5
         
         d3.select('#total-groups').text(data.length);
         d3.select('#critical-groups').text(criticalGroups.length);
