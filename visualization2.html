@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Heatmap - DEI Perception Across Departments | The DEI Lens</title>
+    <title>Diversity Scores by Demographics | The DEI Lens</title>
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/visualization2.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,8 +27,8 @@
     <!-- Header -->
     <header class="viz-header">
         <div class="container">
-            <h1>Heatmap - DEI Perception Across Departments</h1>
-            <p>Analyze DEI scores by department and management level through an interactive heatmap visualization</p>
+            <h1>Diversity Scores by Demographics</h1>
+            <p>Compare diversity perception scores across different demographic groups and departments</p>
         </div>
     </header>
 
@@ -38,33 +38,32 @@
             <h3>Questions Analyzed</h3>
             <div class="question-list">
                 <div class="question-item">
-                    <strong>2 (☆☆)</strong> Are certain groups underrepresented in specific departments or under certain managers?
+                    <strong>5 (☆☆☆)</strong> Are there significant differences in diversity scores (Aug_D_Qx) across genders?
                 </div>
                 <div class="question-item">
-                    <strong>4 (☆)</strong> Which departments are the most diverse?
+                    <strong>6 (☆☆☆)</strong> What about between ethnic groups, LGBTQ+ individuals, people with disabilities, or Indigenous employees?
+                </div>
+                <div class="question-item">
+                    <strong>7 (☆☆)</strong> Which groups show the lowest diversity scores?
                 </div>
                 <div class="question-item">
                     <strong>8 (☆)</strong> Which departments receive the highest diversity scores?
-                </div>
-                <div class="question-item">
-                    <strong>11 (☆)</strong> Does perceived equity vary by division or manager?
-                </div>
-                <div class="question-item">
-                    <strong>16 (☆☆)</strong> Which departments perform well despite high diversity?
                 </div>
             </div>
         </div>
 
         <div class="main-viz">
             <div class="control-tabs">
-                <button class="tab-btn active" data-view="positive">Positive Scores</button>
-                <button class="tab-btn" data-view="negative">Negative Scores</button>
-                <button class="tab-btn" data-view="combined">Combined View</button>
+                <button class="tab-btn active" data-view="gender">By Gender</button>
+                <button class="tab-btn" data-view="ethnicity">By Ethnicity</button>
+                <button class="tab-btn" data-view="lgbtq">By LGBTQ+</button>
+                <button class="tab-btn" data-view="disability">By Disability</button>
+                <button class="tab-btn" data-view="indigenous">By Indigenous</button>
+                <button class="tab-btn" data-view="division">By Department</button>
             </div>
 
-            <div class="heatmap-container">
-                <svg class="heatmap-chart" width="700" height="500"></svg>
-                <div class="color-legend"></div>
+            <div class="chart-container">
+                <svg class="bar-chart" width="800" height="500"></svg>
             </div>
         </div>
 
@@ -72,16 +71,24 @@
             <div class="stats-panel">
                 <h3>Statistics</h3>
                 <div class="stat-item">
-                    <span>Departments:</span>
-                    <span id="dept-count">7</span>
+                    <span>Total Groups:</span>
+                    <span id="group-count">0</span>
                 </div>
                 <div class="stat-item">
-                    <span>DEI Metrics:</span>
-                    <span id="metric-count">6</span>
+                    <span>Employees:</span>
+                    <span id="employee-count">0</span>
                 </div>
                 <div class="stat-item">
-                    <span>Average Score:</span>
+                    <span>Avg Diversity Score:</span>
                     <span id="avg-score">0.00</span>
+                </div>
+                <div class="stat-item">
+                    <span>Highest Score:</span>
+                    <span id="highest-score">0.00</span>
+                </div>
+                <div class="stat-item">
+                    <span>Lowest Score:</span>
+                    <span id="lowest-score">0.00</span>
                 </div>
                 <div class="progress-bar">
                     <div class="progress-fill" id="progress-fill"></div>
@@ -92,40 +99,45 @@
                 <h3>Filters</h3>
                 
                 <div class="filter-group">
-                    <h4>Management Level</h4>
+                    <h4>Score Type</h4>
                     <div class="filter-item">
-                        <input type="checkbox" id="manager-true" checked data-filter="manager" data-value="true">
-                        <label for="manager-true">Managers</label>
+                        <input type="radio" id="diversity-avg" name="score-type" value="diversity" checked>
+                        <label for="diversity-avg">Average Diversity Score</label>
                     </div>
                     <div class="filter-item">
-                        <input type="checkbox" id="manager-false" checked data-filter="manager" data-value="false">
-                        <label for="manager-false">Non-Managers</label>
-                    </div>
-                </div>
-
-                <div class="filter-group">
-                    <h4>DEI Dimensions</h4>
-                    <div class="filter-item">
-                        <input type="checkbox" id="diversity" checked data-filter="dimension" data-value="diversity">
-                        <label for="diversity">Diversity</label>
+                        <input type="radio" id="diversity-positive" name="score-type" value="positive">
+                        <label for="diversity-positive">Positive Responses Only</label>
                     </div>
                     <div class="filter-item">
-                        <input type="checkbox" id="equity" checked data-filter="dimension" data-value="equity">
-                        <label for="equity">Equity</label>
-                    </div>
-                    <div class="filter-item">
-                        <input type="checkbox" id="inclusion" checked data-filter="dimension" data-value="inclusion">
-                        <label for="inclusion">Inclusion</label>
+                        <input type="radio" id="diversity-negative" name="score-type" value="negative">
+                        <label for="diversity-negative">Negative Responses Only</label>
                     </div>
                 </div>
 
                 <div class="filter-group">
-                    <h4>Score Range</h4>
-                    <label for="score-min">Score: <span id="score-range">-2.0 to 2.0</span></label>
+                    <h4>Departments</h4>
+                    <div class="filter-item">
+                        <input type="checkbox" id="dept-all" checked data-filter="division" data-value="all">
+                        <label for="dept-all">All Departments</label>
+                    </div>
+                    <div id="department-filters">
+                        <!-- Department checkboxes will be populated dynamically -->
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h4>Minimum Group Size</h4>
                     <div class="score-slider">
-                        <input type="range" id="score-min" min="-2" max="2" step="0.1" value="-2">
-                        <input type="range" id="score-max" min="-2" max="2" step="0.1" value="2">
+                        <input type="range" id="min-group-size" min="1" max="100" value="5">
+                        <label for="min-group-size">Min: <span id="min-size-value">5</span> employees</label>
                     </div>
+                </div>
+            </div>
+
+            <div class="insights-panel">
+                <h3>Key Insights</h3>
+                <div id="insights-content">
+                    <p>Select a demographic view to see insights...</p>
                 </div>
             </div>
         </div>

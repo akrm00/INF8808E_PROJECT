@@ -1,4 +1,4 @@
-/* Visualization 4 - Scatter Plot Matrix Specific Styles */
+/* Visualization 4 - Inclusion Analysis Box Plots Specific Styles */
 
 .viz-page {
     min-height: 100vh;
@@ -67,7 +67,7 @@
     gap: 2rem;
 }
 
-.questions-panel {
+.insights-panel {
     backdrop-filter: blur(20px);
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -75,9 +75,10 @@
     padding: 2rem;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     height: 830px;
+    overflow-y: auto;
 }
 
-.questions-panel h3 {
+.insights-panel h3 {
     color: #f9fafb;
     font-size: 1.1rem;
     margin-bottom: 1.5rem;
@@ -85,23 +86,18 @@
     text-align: center;
 }
 
-.question-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.question-item {
-    background: rgba(255, 255, 255, 0.08);
+.insight-item {
+    background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 12px;
     padding: 1rem;
+    margin-bottom: 1rem;
     color: #d1d5db;
     font-size: 0.85rem;
     line-height: 1.4;
 }
 
-.question-item strong {
+.insight-item strong {
     color: #f9fafb;
     display: block;
     margin-bottom: 0.5rem;
@@ -129,87 +125,120 @@
 }
 
 /* Custom scrollbar for controls panel */
-.controls-panel::-webkit-scrollbar {
+.controls-panel::-webkit-scrollbar,
+.insights-panel::-webkit-scrollbar {
     width: 8px;
 }
 
-.controls-panel::-webkit-scrollbar-track {
+.controls-panel::-webkit-scrollbar-track,
+.insights-panel::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 4px;
 }
 
-.controls-panel::-webkit-scrollbar-thumb {
+.controls-panel::-webkit-scrollbar-thumb,
+.insights-panel::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.3);
     border-radius: 4px;
 }
 
-.controls-panel::-webkit-scrollbar-thumb:hover {
+.controls-panel::-webkit-scrollbar-thumb:hover,
+.insights-panel::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.5);
 }
 
-.matrix-controls {
+.view-controls {
     display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.control-row {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    flex-wrap: wrap;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    padding: 1rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
 }
 
-.dimension-selector {
+.dimension-tabs {
     display: flex;
-    align-items: center;
     gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
-.dimension-selector label {
+.tab-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     color: #d1d5db;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
     font-size: 0.85rem;
     font-weight: 500;
 }
 
-.dimension-selector select {
+.tab-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.tab-btn.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: #f9fafb;
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.score-selector {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.score-selector label {
+    color: #d1d5db;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.score-selector select {
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: #f9fafb;
-    padding: 0.4rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    min-width: 160px;
 }
 
-.dimension-selector select option {
+.score-selector select option {
     background: #2a2a2a;
     color: #f9fafb;
-    padding: 0.5rem;
 }
 
-.dimension-selector select:focus {
+.score-selector select:focus {
     outline: none;
     border-color: rgba(255, 255, 255, 0.4);
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
 }
 
-.dimension-selector span {
-    color: #d1d5db;
-    font-size: 0.85rem;
-}
-
-.view-controls {
+.chart-controls {
     display: flex;
     gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .control-btn {
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: #d1d5db;
-    padding: 0.4rem 0.8rem;
+    padding: 0.6rem 1rem;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 0.8rem;
-    position: relative;
 }
 
 .control-btn:hover {
@@ -220,112 +249,79 @@
 .control-btn.active {
     background: rgba(255, 255, 255, 0.2);
     color: #f9fafb;
+    border-color: rgba(255, 255, 255, 0.4);
 }
 
-#reset-zoom:hover {
-    background: rgba(255, 107, 107, 0.2);
-    border-color: rgba(255, 107, 107, 0.4);
-}
-
-#reset-zoom:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    pointer-events: none;
-}
-
-.scatter-container {
+.boxplot-container {
     display: flex;
     flex-direction: column;
     align-items: center;
+    margin-top: 4rem;
 }
 
-.scatter-matrix {
-    margin: 1rem 0;
-    cursor: grab;
-}
-
-.scatter-matrix:active {
-    cursor: grabbing;
-}
-
-.zoom-container {
-    pointer-events: all;
-}
-
-.scatter-point {
-    cursor: pointer;
-    transition: all 0.3s ease;
-    pointer-events: all;
-}
-
-.scatter-point:hover {
-    stroke: rgba(255, 255, 255, 0.8);
-    stroke-width: 2;
-}
-
-.scatter-point.highlighted {
-    stroke: #fff;
-    stroke-width: 2;
-}
-
-.trend-line {
-    stroke: #ff6b6b;
-    stroke-width: 2;
-    fill: none;
-    stroke-dasharray: 5,5;
-    pointer-events: none;
-}
-
-.scatter-axis text {
-    fill: #d1d5db;
-    font-size: 10px;
-    font-family: 'Inter', sans-serif;
-}
-
-.scatter-axis .domain {
-    stroke: rgba(255, 255, 255, 0.3);
-}
-
-.scatter-axis .tick line {
-    stroke: rgba(255, 255, 255, 0.2);
-}
-
-.axis-label {
-    fill: #f9fafb;
-    font-size: 11px;
-    font-weight: 500;
-    font-family: 'Inter', sans-serif;
-}
-
-.correlation-text {
-    fill: #f9fafb;
-    font-size: 12px;
-    font-weight: 600;
-    font-family: 'Inter', sans-serif;
-}
-
-.matrix-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-top: 1rem;
-    padding: 1rem;
-    background: rgba(255, 255, 255, 0.05);
+.boxplot-chart {
+    background: rgba(255, 255, 255, 0.02);
     border-radius: 12px;
+    overflow: visible;
 }
 
-.legend-item {
+/* Box plot specific styles */
+.boxplot-chart rect {
+    transition: opacity 0.3s ease, stroke-width 0.3s ease;
+}
+
+.boxplot-chart rect:hover {
+    stroke-width: 2 !important;
+}
+
+.boxplot-chart circle {
+    transition: all 0.3s ease;
+}
+
+.boxplot-chart circle:hover {
+    stroke-width: 3 !important;
+    r: 5 !important;
+}
+
+.boxplot-chart line {
+    transition: stroke-width 0.3s ease;
+}
+
+.stats-panel {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stats-panel h3 {
+    color: #f9fafb;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.stat-item {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.8rem;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
     color: #d1d5db;
+    font-size: 0.9rem;
 }
 
-.legend-color {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4a4a4a, #808080);
+    transition: width 0.3s ease;
 }
 
 .filters-section {
@@ -370,57 +366,30 @@
     cursor: pointer;
 }
 
-.margin-slider,
-.age-slider {
-    margin: 1rem 0;
+.dual-range {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
 }
 
-.margin-slider input[type="range"],
-.age-slider input[type="range"] {
+.dual-range input[type="range"] {
     width: 100%;
     height: 6px;
     background: rgba(255, 255, 255, 0.2);
     border-radius: 3px;
     outline: none;
     accent-color: #f9fafb;
-    margin-bottom: 0.5rem;
 }
 
-.stats-panel {
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.stats-panel h3 {
-    color: #f9fafb;
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
-    font-weight: 600;
-}
-
-.stat-item {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
-    color: #d1d5db;
-    font-size: 0.9rem;
-}
-
-.progress-bar {
+input[type="range"] {
     width: 100%;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-    overflow: hidden;
-    margin-top: 0.5rem;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #4a4a4a, #808080);
-    transition: width 0.3s ease;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    outline: none;
+    accent-color: #f9fafb;
+    margin: 0.5rem 0;
 }
 
 .tooltip {
@@ -439,38 +408,14 @@
     max-width: 250px;
 }
 
-/* Brush selection styling */
-.brush .overlay {
-    fill: rgba(255, 255, 255, 0.1);
-}
-
-.brush .selection {
-    fill: rgba(255, 255, 255, 0.2);
-    stroke: rgba(255, 255, 255, 0.6);
-    stroke-width: 1;
-}
-
-/* Zoom hint */
-.scatter-container::after {
-    content: "💡 Use mouse wheel to zoom, drag to pan";
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.5);
-    background: rgba(0, 0, 0, 0.7);
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    pointer-events: none;
-}
-
 /* Responsive Design */
 @media (max-width: 1200px) {
     .viz-content {
         grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
     
-    .questions-panel {
+    .insights-panel {
         order: -1;
         height: auto;
     }
@@ -483,62 +428,15 @@
     
     .main-viz {
         height: auto;
+        min-height: 600px;
     }
     
-    .matrix-controls {
+    .dimension-tabs {
         flex-direction: column;
+    }
+    
+    .view-controls {
         gap: 1rem;
-        align-items: stretch;
     }
 }
 
-@media (max-width: 768px) {
-    .viz-content {
-        padding: 1rem;
-        grid-template-columns: 1fr;
-    }
-    
-    .viz-header h1 {
-        font-size: 1.25rem;
-    }
-    
-    .viz-header p {
-        font-size: 0.85rem;
-    }
-
-    .questions-panel {
-        order: -1;
-        height: auto;
-    }
-    
-    .scatter-matrix {
-        width: 100%;
-        height: auto;
-    }
-    
-    .dimension-selector {
-        flex-direction: column;
-        align-items: stretch;
-    }
-}
-
-@media (max-width: 480px) {
-    .viz-header h1 {
-        font-size: 1.1rem;
-    }
-
-    .question-item {
-        font-size: 0.8rem;
-        padding: 0.75rem;
-    }
-    
-    .scatter-matrix {
-        width: 320px;
-        height: 240px;
-    }
-    
-    .matrix-legend {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-} 

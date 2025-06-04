@@ -1,4 +1,4 @@
-/* Visualization 2 - Heatmap Specific Styles */
+/* Visualization 2 - Bar Chart Specific Styles */
 
 .viz-page {
     min-height: 100vh;
@@ -114,7 +114,7 @@
     border-radius: 20px;
     padding: 2rem;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    height:720px;
+    height: 720px;
 }
 
 .controls-panel {
@@ -125,7 +125,7 @@
     padding: 2rem;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     height: 720px;
-    /* overflow-y: auto; */
+    overflow-y: auto;
 }
 
 /* Custom scrollbar for controls panel */
@@ -151,6 +151,7 @@
     display: flex;
     gap: 0.5rem;
     margin-bottom: 2rem;
+    flex-wrap: wrap;
 }
 
 .tab-btn {
@@ -163,6 +164,8 @@
     transition: all 0.3s ease;
     font-size: 0.85rem;
     font-weight: 500;
+    flex: 1;
+    min-width: 100px;
 }
 
 .tab-btn:hover {
@@ -176,39 +179,40 @@
     color: #f9fafb;
 }
 
-.heatmap-container {
+.chart-container {
     display: flex;
     flex-direction: column;
     align-items: center;
+    overflow-x: auto;
 }
 
-.heatmap-chart {
+.bar-chart {
     margin: 1rem 0;
 }
 
-.heatmap-cell {
-    stroke: rgba(255, 255, 255, 0.2);
-    stroke-width: 1;
+.bar-chart .bar {
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
-.heatmap-cell:hover {
-    stroke: rgba(255, 255, 255, 0.8);
-    stroke-width: 2;
+.bar-chart .bar:hover {
+    opacity: 0.8;
 }
 
-.heatmap-axis text {
+.bar-chart .x-axis text,
+.bar-chart .y-axis text {
     fill: #d1d5db;
     font-size: 11px;
     font-family: 'Inter', sans-serif;
 }
 
-.heatmap-axis .domain {
+.bar-chart .x-axis .domain,
+.bar-chart .y-axis .domain {
     stroke: rgba(255, 255, 255, 0.3);
 }
 
-.heatmap-axis .tick line {
+.bar-chart .x-axis .tick line,
+.bar-chart .y-axis .tick line {
     stroke: rgba(255, 255, 255, 0.2);
 }
 
@@ -219,25 +223,8 @@
     font-family: 'Inter', sans-serif;
 }
 
-.color-legend {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-top: 1rem;
-    padding: 1rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
-}
-
-.legend-gradient {
-    width: 200px;
-    height: 20px;
-    border-radius: 4px;
-}
-
-.legend-text {
-    color: #d1d5db;
-    font-size: 0.8rem;
+.score-label {
+    pointer-events: none;
 }
 
 .filters-section {
@@ -270,7 +257,8 @@
     cursor: pointer;
 }
 
-.filter-item input[type="checkbox"] {
+.filter-item input[type="checkbox"],
+.filter-item input[type="radio"] {
     width: 16px;
     height: 16px;
     accent-color: #f9fafb;
@@ -333,6 +321,31 @@
     transition: width 0.3s ease;
 }
 
+.insights-panel {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.insights-panel h3 {
+    color: #f9fafb;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.insight-item {
+    color: #d1d5db;
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+}
+
+.insight-item strong {
+    color: #f9fafb;
+}
+
 .tooltip {
     position: absolute;
     background: rgba(0, 0, 0, 0.9);
@@ -368,60 +381,17 @@
     .main-viz {
         height: auto;
     }
-}
-
-@media (max-width: 768px) {
-    .viz-content {
-        padding: 1rem;
-        grid-template-columns: 1fr;
-    }
     
     .control-tabs {
-        flex-direction: column;
-    }
-    
-    .viz-header h1 {
-        font-size: 1.25rem;
-    }
-    
-    .viz-header p {
-        font-size: 0.85rem;
-    }
-
-    .questions-panel {
-        order: -1;
-        height: auto;
-    }
-    
-    .heatmap-chart {
-        width: 100%;
-        height: auto;
-    }
-}
-
-@media (max-width: 480px) {
-    .viz-header h1 {
-        font-size: 1.1rem;
-    }
-    
-    .control-tabs {
-        flex-direction: column;
+        justify-content: center;
     }
     
     .tab-btn {
-        text-align: center;
-    }
-
-    .question-item {
-        font-size: 0.8rem;
-        padding: 0.75rem;
-    }
-    
-    .heatmap-chart {
-        width: 320px;
-        height: 240px;
+        flex: none;
+        min-width: 120px;
     }
 }
+
 
 .dimension-selector select {
     background: rgba(255, 255, 255, 0.1);

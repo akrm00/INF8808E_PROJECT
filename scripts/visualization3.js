@@ -1,26 +1,17 @@
-// Configuration for Grouped Bar Chart Visualization
-const margin = { top: 40, right: 40, bottom: 80, left: 60 };
-const width = 700 - margin.left - margin.right;
-const height = 450 - margin.top - margin.bottom;
+// Configuration for Equity Hot Spots Heatmap
+const margin = { top: 60, right: 40, bottom: 120, left: 150 };
+const width = 800 - margin.left - margin.right;
+const height = 500 - margin.top - margin.bottom;
 
 // Global variables
 let data = [];
-let chartData = [];
-let currentDemographic = 'Gender';
-let currentView = 'positive';
-let currentSort = 'alphabetical';
-let sortOrder = 'desc';
-let activeDimensions = ['diversity', 'equity', 'inclusion'];
-let showErrorBars = false;
-let showSampleSize = true;
-let minSampleSize = 1;
-
-// DEI colors
-const deiColors = {
-    diversity: '#ff6b6b',
-    equity: '#4ecdc4', 
-    inclusion: '#45b7d1'
-};
+let heatmapData = [];
+let currentView = 'demographics';
+let currentMetric = 'negative';
+let activeGroups = ['gender', 'ethnicity', 'lgbtq', 'disability', 'veteran', 'indigenous', 'minority'];
+let minSampleSize = 5;
+let showValues = true;
+let showSampleCounts = false;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
@@ -33,31 +24,30 @@ async function loadData() {
     try {
         const rawData = await d3.csv('./data/deidataset.csv');
         
-        
         data = rawData.map(d => {
-            
-            const dPositive = calculateAverage([d.Aug_D_Q1, d.Aug_D_Q2, d.Aug_D_Q3, d.Aug_D_Q4, d.Aug_D_Q5]);
-            const ePositive = calculateAverage([d.Aug_E_Q1, d.Aug_E_Q2, d.Aug_E_Q3, d.Aug_E_Q4, d.Aug_E_Q5]);
-            const iPositive = calculateAverage([d.Aug_I_Q1, d.Aug_I_Q2, d.Aug_I_Q3, d.Aug_I_Q4, d.Aug_I_Q5]);
+            // Calculate equity scores from individual questions
+            const eQuestions = [d.Aug_E_Q1, d.Aug_E_Q2, d.Aug_E_Q3, d.Aug_E_Q4, d.Aug_E_Q5].map(v => +v);
+            const ePositive = eQuestions.filter(v => !isNaN(v) && v > 0).reduce((a, b) => a + b, 0) / eQuestions.filter(v => !isNaN(v) && v > 0).length || 0;
+            const eNegative = Math.abs(eQuestions.filter(v => !isNaN(v) && v < 0).reduce((a, b) => a + b, 0) / eQuestions.filter(v => !isNaN(v) && v < 0).length || 0);
             
             return {
                 id: +d.Id,
+                division: d.Division,
+                manager: d.Manager,
                 gender: d.Gender,
                 ethnicity: d.Ethnicity,
                 lgbtq: d.LGBTQ,
                 disability: d.Disability,
                 veteran: d.Veteran,
                 indigenous: d.Indigenous,
-                diversity_positive: dPositive,
+                minority: d.Minority,
                 equity_positive: ePositive,
-                inclusion_positive: iPositive,
-                diversity_negative: d.D_Negative ? +d.D_Negative : -dPositive + Math.random() * 0.5,
-                equity_negative: d.E_Negative ? +d.E_Negative : -ePositive + Math.random() * 0.5,
-                inclusion_negative: d.I_Negative ? +d.I_Negative : -iPositive + Math.random() * 0.5
+                equity_negative: eNegative,
+                equity_gap: ePositive - eNegative
             };
         });
 
-        createChartData();
+        createHeatmapData();
         createVisualization();
         updateStats();
     } catch (error) {
@@ -65,280 +55,264 @@ async function loadData() {
     }
 }
 
-// Helper function to calculate average
-function calculateAverage(values) {
-    const numericValues = values.map(v => +v).filter(v => !isNaN(v));
-    return numericValues.length > 0 ? numericValues.reduce((a, b) => a + b, 0) / numericValues.length : 0;
-}
-
-// Create chart data structure
-function createChartData() {
-    const dimensionMap = {
-        'Gender': 'gender',
-        'Ethnicity': 'ethnicity', 
-        'LGBTQ': 'lgbtq',
-        'Disability': 'disability',
-        'Veteran': 'veteran',
-        'Indigenous': 'indigenous'
-    };
+// Create heatmap data structure
+function createHeatmapData() {
+    heatmapData = [];
     
-    const field = dimensionMap[currentDemographic];
-    const categories = [...new Set(data.map(d => d[field]))].filter(c => c && c !== '');
-    
-    chartData = [];
-    
-    categories.forEach(category => {
-        const categoryData = data.filter(d => d[field] === category);
+    if (currentView === 'demographics') {
+        const groupMappings = {
+            'gender': 'gender',
+            'ethnicity': 'ethnicity', 
+            'lgbtq': 'lgbtq',
+            'disability': 'disability',
+            'veteran': 'veteran',
+            'indigenous': 'indigenous',
+            'minority': 'minority'
+        };
         
-        if (categoryData.length >= minSampleSize) {
-            const item = {
-                category: category,
-                count: categoryData.length
-            };
+        activeGroups.forEach(groupType => {
+            const field = groupMappings[groupType];
+            const categories = [...new Set(data.map(d => d[field]))].filter(c => c && c !== '');
             
-            
-            activeDimensions.forEach(dimension => {
-                const scoreField = `${dimension}_${currentView}`;
-                const scores = categoryData.map(d => d[scoreField]).filter(s => !isNaN(s));
+            categories.forEach(category => {
+                const categoryData = data.filter(d => d[field] === category);
                 
-                if (scores.length > 0) {
-                    const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
-                    const std = Math.sqrt(scores.reduce((sq, n) => sq + Math.pow(n - mean, 2), 0) / scores.length);
+                if (categoryData.length >= minSampleSize) {
+                    const scores = categoryData.map(d => d[`equity_${currentMetric}`]).filter(s => !isNaN(s));
                     
-                    item[dimension] = mean;
-                    item[`${dimension}_std`] = std;
-                    item[`${dimension}_count`] = scores.length;
+                    if (scores.length > 0) {
+                        const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+                        
+                        heatmapData.push({
+                            group: groupType.charAt(0).toUpperCase() + groupType.slice(1),
+                            category: category,
+                            value: mean,
+                            count: scores.length,
+                            groupType: groupType
+                        });
+                    }
                 }
             });
+        });
+    } else if (currentView === 'divisions') {
+        const divisions = [...new Set(data.map(d => d.division))].filter(d => d && d !== '');
+        
+        activeGroups.forEach(groupType => {
+            const field = groupType === 'gender' ? 'gender' : 
+                         groupType === 'ethnicity' ? 'ethnicity' : 
+                         groupType === 'lgbtq' ? 'lgbtq' :
+                         groupType === 'disability' ? 'disability' :
+                         groupType === 'veteran' ? 'veteran' :
+                         groupType === 'indigenous' ? 'indigenous' : 'minority';
             
-            chartData.push(item);
-        }
-    });
-    
-    
-    sortChartData();
-}
-
-// Sort chart data
-function sortChartData() {
-    const sortMultiplier = sortOrder === 'desc' ? -1 : 1;
-    
-    chartData.sort((a, b) => {
-        let aVal, bVal;
+            divisions.forEach(division => {
+                const divisionData = data.filter(d => d.division === division);
+                const scores = divisionData.map(d => d[`equity_${currentMetric}`]).filter(s => !isNaN(s));
+                
+                if (scores.length >= minSampleSize) {
+                    const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+                    
+                    heatmapData.push({
+                        group: groupType.charAt(0).toUpperCase() + groupType.slice(1),
+                        category: division,
+                        value: mean,
+                        count: scores.length,
+                        groupType: groupType
+                    });
+                }
+            });
+        });
+    } else if (currentView === 'managers') {
+        const managers = [...new Set(data.map(d => d.manager))].filter(m => m && m !== '' && m !== 'No');
         
-        switch (currentSort) {
-            case 'alphabetical':
-                return sortMultiplier * a.category.localeCompare(b.category);
-            case 'diversity':
-                aVal = a.diversity || 0;
-                bVal = b.diversity || 0;
-                break;
-            case 'equity':
-                aVal = a.equity || 0;
-                bVal = b.equity || 0;
-                break;
-            case 'inclusion':
-                aVal = a.inclusion || 0;
-                bVal = b.inclusion || 0;
-                break;
-            case 'overall':
-                aVal = ((a.diversity || 0) + (a.equity || 0) + (a.inclusion || 0)) / 3;
-                bVal = ((b.diversity || 0) + (b.equity || 0) + (b.inclusion || 0)) / 3;
-                break;
-            default:
-                return 0;
-        }
+        // Limit to top managers by team size for readability
+        const managerCounts = {};
+        managers.forEach(manager => {
+            managerCounts[manager] = data.filter(d => d.manager === manager).length;
+        });
         
-        return sortMultiplier * (aVal - bVal);
-    });
+        const topManagers = Object.entries(managerCounts)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 15)
+            .map(([manager,]) => manager);
+        
+        activeGroups.forEach(groupType => {
+            const field = groupType === 'gender' ? 'gender' : 
+                         groupType === 'ethnicity' ? 'ethnicity' : 
+                         groupType === 'lgbtq' ? 'lgbtq' :
+                         groupType === 'disability' ? 'disability' :
+                         groupType === 'veteran' ? 'veteran' :
+                         groupType === 'indigenous' ? 'indigenous' : 'minority';
+            
+            topManagers.forEach(manager => {
+                const managerData = data.filter(d => d.manager === manager);
+                const scores = managerData.map(d => d[`equity_${currentMetric}`]).filter(s => !isNaN(s));
+                
+                if (scores.length >= minSampleSize) {
+                    const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+                    
+                    heatmapData.push({
+                        group: groupType.charAt(0).toUpperCase() + groupType.slice(1),
+                        category: manager,
+                        value: mean,
+                        count: scores.length,
+                        groupType: groupType
+                    });
+                }
+            });
+        });
+    }
 }
 
 // Setup event listeners
 function setupEventListeners() {
-    
+    // View tabs
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-            currentDemographic = this.dataset.demographic;
-            createChartData();
-            updateVisualization();
-            updateStats();
-        });
-    });
-
-    
-    document.querySelectorAll('.toggle-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
             currentView = this.dataset.view;
-            createChartData();
-            updateVisualization();
-        });
-    });
-
-    
-    document.getElementById('sort-select').addEventListener('change', function() {
-        currentSort = this.value;
-        createChartData();
-        updateVisualization();
-    });
-
-    document.getElementById('sort-order').addEventListener('click', function() {
-        sortOrder = sortOrder === 'desc' ? 'asc' : 'desc';
-        this.textContent = sortOrder === 'desc' ? '↓ Desc' : '↑ Asc';
-        this.dataset.order = sortOrder;
-        createChartData();
-        updateVisualization();
-    });
-
-    
-    document.querySelectorAll('input[data-dimension]').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const dimension = this.dataset.dimension;
-            if (this.checked) {
-                if (!activeDimensions.includes(dimension)) {
-                    activeDimensions.push(dimension);
-                }
-            } else {
-                activeDimensions = activeDimensions.filter(d => d !== dimension);
-            }
-            createChartData();
+            document.getElementById('current-view').textContent = 
+                currentView === 'demographics' ? 'Demographics' : 
+                currentView === 'divisions' ? 'Division' : 'Manager';
+            createHeatmapData();
             updateVisualization();
             updateStats();
         });
     });
 
-    
-    document.getElementById('show-error-bars').addEventListener('change', function() {
-        showErrorBars = this.checked;
-        updateVisualization();
-    });
-
-    document.getElementById('show-sample-size').addEventListener('change', function() {
-        showSampleSize = this.checked;
-        updateVisualization();
-    });
-
-   
-    document.getElementById('min-sample').addEventListener('input', function() {
-        minSampleSize = +this.value;
-        document.getElementById('min-sample-value').textContent = this.value;
-        createChartData();
+    // Metric selector
+    document.getElementById('equity-metric').addEventListener('change', function() {
+        currentMetric = this.value;
+        createHeatmapData();
         updateVisualization();
         updateStats();
     });
 
-   
-    const scoreMin = document.getElementById('score-min');
-    const scoreMax = document.getElementById('score-max');
-    
-    [scoreMin, scoreMax].forEach(slider => {
-        slider.addEventListener('input', function() {
-            const min = Math.min(+scoreMin.value, +scoreMax.value);
-            const max = Math.max(+scoreMin.value, +scoreMax.value);
-            scoreMin.value = min;
-            scoreMax.value = max;
-            document.getElementById('score-range').textContent = `${min.toFixed(1)} to ${max.toFixed(1)}`;
+    // Group filters
+    document.querySelectorAll('input[data-group]').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const group = this.dataset.group;
+            if (this.checked) {
+                if (!activeGroups.includes(group)) {
+                    activeGroups.push(group);
+                }
+            } else {
+                activeGroups = activeGroups.filter(g => g !== group);
+            }
+            createHeatmapData();
             updateVisualization();
+            updateStats();
         });
+    });
+
+    // Sample size filter
+    document.getElementById('min-sample').addEventListener('input', function() {
+        minSampleSize = +this.value;
+        document.getElementById('min-sample-value').textContent = this.value;
+        createHeatmapData();
+        updateVisualization();
+        updateStats();
+    });
+
+    // Visualization options
+    document.getElementById('show-values').addEventListener('change', function() {
+        showValues = this.checked;
+        updateVisualization();
+    });
+
+    document.getElementById('show-sample-counts').addEventListener('change', function() {
+        showSampleCounts = this.checked;
+        updateVisualization();
     });
 }
 
 // Create visualization
 function createVisualization() {
-    const svg = d3.select('.bar-chart');
+    const svg = d3.select('.heatmap');
     svg.selectAll('*').remove();
 
-    if (chartData.length === 0) return;
+    if (heatmapData.length === 0) return;
 
-    
+    // Get unique groups and categories
+    const groups = [...new Set(heatmapData.map(d => d.group))];
+    const categories = [...new Set(heatmapData.map(d => d.category))];
+
+    // Create scales
     const xScale = d3.scaleBand()
-        .domain(chartData.map(d => d.category))
+        .domain(categories)
         .range([0, width])
-        .padding(0.2);
+        .padding(0.05);
 
-    
-    const allValues = chartData.flatMap(d => 
-        activeDimensions.map(dim => d[dim]).filter(v => v !== undefined && v >= 0)
-    );
-    
-    let yMin = 0;
-    let yMax = Math.max(0, d3.max(allValues) || 1);
-    
-    // Add some padding to the top
-    const padding = yMax * 0.1;
-    yMax += padding;
+    const yScale = d3.scaleBand()
+        .domain(groups)
+        .range([0, height])
+        .padding(0.05);
 
-    const yScale = d3.scaleLinear()
-        .domain([yMin, yMax])
-        .nice()
-        .range([height, 0]);
+    // Color scale based on metric
+    const values = heatmapData.map(d => d.value);
+    const colorScale = currentMetric === 'negative' 
+        ? d3.scaleSequential(d3.interpolateReds)
+            .domain([0, d3.max(values)])
+        : currentMetric === 'positive'
+        ? d3.scaleSequential(d3.interpolateGreens)
+            .domain([0, d3.max(values)])
+        : d3.scaleSequential(d3.interpolateRdYlGn)
+            .domain([d3.min(values), d3.max(values)]);
 
-    const xSubScale = d3.scaleBand()
-        .domain(activeDimensions)
-        .range([0, xScale.bandwidth()])
-        .padding(0.1);
-
-    
     const g = svg.append('g')
         .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    
-    const barGroups = g.selectAll('.bar-group')
-        .data(chartData)
+    // Create heatmap cells
+    const cells = g.selectAll('.heatmap-cell')
+        .data(heatmapData)
         .enter()
         .append('g')
-        .attr('class', 'bar-group')
-        .attr('transform', d => `translate(${xScale(d.category)},0)`);
+        .attr('class', 'heatmap-cell');
 
-    
-    activeDimensions.forEach(dimension => {
-        barGroups.append('rect')
-            .attr('class', 'bar')
-            .attr('x', xSubScale(dimension))
-            .attr('y', d => {
-                const value = Math.max(0, d[dimension] || 0);
-                return yScale(value);
-            })
-            .attr('width', xSubScale.bandwidth())
-            .attr('height', d => {
-                const value = Math.max(0, d[dimension] || 0);
-                return yScale(0) - yScale(value);
-            })
-            .attr('fill', deiColors[dimension])
-            .attr('opacity', 0.8)
-            .on('mouseover', function(event, d) {
-                showTooltip(event, d, dimension);
-            })
-            .on('mouseout', hideTooltip);
+    cells.append('rect')
+        .attr('x', d => xScale(d.category))
+        .attr('y', d => yScale(d.group))
+        .attr('width', xScale.bandwidth())
+        .attr('height', yScale.bandwidth())
+        .attr('fill', d => colorScale(d.value))
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 1)
+        .attr('opacity', 0.8)
+        .on('mouseover', function(event, d) {
+            d3.select(this).attr('opacity', 1);
+            showTooltip(event, d);
+        })
+        .on('mouseout', function() {
+            d3.select(this).attr('opacity', 0.8);
+            hideTooltip();
+        });
 
-        
-        if (showErrorBars) {
-            barGroups.filter(d => d[`${dimension}_std`])
-                .append('line')
-                .attr('class', 'error-bar')
-                .attr('x1', xSubScale(dimension) + xSubScale.bandwidth() / 2)
-                .attr('x2', xSubScale(dimension) + xSubScale.bandwidth() / 2)
-                .attr('y1', d => yScale((d[dimension] || 0) + (d[`${dimension}_std`] || 0)))
-                .attr('y2', d => yScale((d[dimension] || 0) - (d[`${dimension}_std`] || 0)));
-        }
-    });
-
-    
-    if (showSampleSize) {
-        barGroups.append('text')
-            .attr('class', 'sample-size')
-            .attr('x', xScale.bandwidth() / 2)
-            .attr('y', -5)
+    // Add text values
+    if (showValues) {
+        cells.append('text')
+            .attr('x', d => xScale(d.category) + xScale.bandwidth() / 2)
+            .attr('y', d => yScale(d.group) + yScale.bandwidth() / 2)
             .attr('text-anchor', 'middle')
-            .attr('fill', '#d1d5db')
+            .attr('dominant-baseline', 'middle')
+            .attr('fill', d => d.value > (d3.max(values) * 0.6) ? 'white' : 'black')
             .attr('font-size', '10px')
+            .attr('font-weight', 'bold')
+            .text(d => d.value.toFixed(2));
+    }
+
+    // Add sample counts
+    if (showSampleCounts) {
+        cells.append('text')
+            .attr('x', d => xScale(d.category) + xScale.bandwidth() / 2)
+            .attr('y', d => yScale(d.group) + yScale.bandwidth() - 5)
+            .attr('text-anchor', 'middle')
+            .attr('fill', d => d.value > (d3.max(values) * 0.6) ? 'white' : 'black')
+            .attr('font-size', '8px')
             .text(d => `n=${d.count}`);
     }
 
-    
+    // Add axes
     g.append('g')
         .attr('class', 'chart-axis')
         .attr('transform', `translate(0,${height})`)
@@ -347,90 +321,131 @@ function createVisualization() {
         .style('text-anchor', 'end')
         .attr('dx', '-.8em')
         .attr('dy', '.15em')
-        .attr('transform', 'rotate(-45)');
+        .attr('transform', 'rotate(-45)')
+        .attr('fill', '#d1d5db');
 
     g.append('g')
         .attr('class', 'chart-axis')
-        .call(d3.axisLeft(yScale));
+        .call(d3.axisLeft(yScale))
+        .selectAll('text')
+        .attr('fill', '#d1d5db');
 
-    
+    // Update color scale legend
+    updateColorScale(colorScale, values);
+
+    // Add axis labels
     g.append('text')
         .attr('class', 'axis-label')
         .attr('transform', 'rotate(-90)')
-        .attr('y', 0 - margin.left)
+        .attr('y', 0 - margin.left + 20)
         .attr('x', 0 - (height / 2))
         .attr('dy', '1em')
         .style('text-anchor', 'middle')
-        .text('DEI Score');
+        .attr('fill', '#f9fafb')
+        .text('Demographic Groups');
 
     g.append('text')
         .attr('class', 'axis-label')
-        .attr('transform', `translate(${width / 2}, ${height + margin.bottom - 10})`)
+        .attr('transform', `translate(${width / 2}, ${height + margin.bottom - 20})`)
         .style('text-anchor', 'middle')
-        .text(currentDemographic);
-
-    
-    updateLegend();
+        .attr('fill', '#f9fafb')
+        .text(currentView === 'demographics' ? 'Categories' : 
+              currentView === 'divisions' ? 'Divisions' : 'Managers');
 }
 
-// Update visualization (for filtering)
+// Update visualization
 function updateVisualization() {
-    createChartData();
+    createHeatmapData();
     createVisualization();
 }
 
-
-function updateLegend() {
-    const legend = d3.select('.chart-legend');
-    legend.selectAll('*').remove();
-
-    activeDimensions.forEach(dimension => {
-        const item = legend.append('div')
-            .attr('class', 'legend-item');
-
-        item.append('div')
-            .attr('class', 'legend-color')
-            .style('background-color', deiColors[dimension]);
-
-        item.append('span')
-            .text(dimension.charAt(0).toUpperCase() + dimension.slice(1));
-    });
+// Update color scale legend
+function updateColorScale(colorScale, values) {
+    const gradient = d3.select('.color-gradient');
+    gradient.selectAll('*').remove();
+    
+    const gradientSvg = gradient.append('svg')
+        .attr('width', 200)
+        .attr('height', 20);
+    
+    const defs = gradientSvg.append('defs');
+    const linearGradient = defs.append('linearGradient')
+        .attr('id', 'color-scale-gradient')
+        .attr('x1', '0%')
+        .attr('x2', '100%');
+    
+    const steps = 10;
+    for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const value = d3.min(values) + t * (d3.max(values) - d3.min(values));
+        linearGradient.append('stop')
+            .attr('offset', `${t * 100}%`)
+            .attr('stop-color', colorScale(value));
+    }
+    
+    gradientSvg.append('rect')
+        .attr('width', 200)
+        .attr('height', 20)
+        .style('fill', 'url(#color-scale-gradient)');
+    
+    document.getElementById('scale-min').textContent = d3.min(values).toFixed(2);
+    document.getElementById('scale-max').textContent = d3.max(values).toFixed(2);
 }
 
 // Update statistics
 function updateStats() {
-    document.getElementById('current-group').textContent = currentDemographic;
-    document.getElementById('category-count').textContent = chartData.length;
+    document.getElementById('category-count').textContent = heatmapData.length;
 
-    const avgDiversity = chartData.length > 0 ? 
-        chartData.reduce((sum, d) => sum + (d.diversity || 0), 0) / chartData.length : 0;
-    const avgEquity = chartData.length > 0 ? 
-        chartData.reduce((sum, d) => sum + (d.equity || 0), 0) / chartData.length : 0;
-    const avgInclusion = chartData.length > 0 ? 
-        chartData.reduce((sum, d) => sum + (d.inclusion || 0), 0) / chartData.length : 0;
+    if (heatmapData.length > 0) {
+        const values = heatmapData.map(d => d.value);
+        const worstScore = currentMetric === 'negative' ? d3.max(values) : d3.min(values);
+        const bestScore = currentMetric === 'negative' ? d3.min(values) : d3.max(values);
+        
+        document.getElementById('worst-score').textContent = worstScore.toFixed(3);
+        document.getElementById('best-score').textContent = bestScore.toFixed(3);
 
-    document.getElementById('avg-diversity').textContent = avgDiversity.toFixed(2);
-    document.getElementById('avg-equity').textContent = avgEquity.toFixed(2);
-    document.getElementById('avg-inclusion').textContent = avgInclusion.toFixed(2);
+        // Show most critical groups
+        const sortedData = [...heatmapData].sort((a, b) => 
+            currentMetric === 'negative' ? b.value - a.value : a.value - b.value
+        );
+        
+        const criticalList = document.getElementById('critical-list');
+        criticalList.innerHTML = '';
+        
+        sortedData.slice(0, 5).forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'critical-item';
+            div.innerHTML = `
+                <strong>${index + 1}.</strong> ${item.group} - ${item.category}: 
+                <span style="color: ${currentMetric === 'negative' ? '#ff6b6b' : '#4ecdc4'}">
+                    ${item.value.toFixed(3)}
+                </span> (n=${item.count})
+            `;
+            criticalList.appendChild(div);
+        });
 
-    
-    const overallAvg = (avgDiversity + avgEquity + avgInclusion) / 3;
-    const normalizedScore = (overallAvg + 2) / 4 * 100;
-    document.getElementById('progress-fill').style.width = `${Math.max(0, Math.min(100, normalizedScore))}%`;
+        // Update progress bar (normalized score)
+        const avgScore = values.reduce((a, b) => a + b, 0) / values.length;
+        const normalizedScore = currentMetric === 'negative' 
+            ? (1 - (avgScore / d3.max(values))) * 100
+            : (avgScore / d3.max(values)) * 100;
+        document.getElementById('progress-fill').style.width = `${Math.max(0, Math.min(100, normalizedScore))}%`;
+    }
 }
 
 // Tooltip functions
-function showTooltip(event, d, dimension) {
+function showTooltip(event, d) {
     const tooltip = document.getElementById('tooltip');
-    const score = d[dimension] || 0;
-    const std = d[`${dimension}_std`] || 0;
-    const count = d[`${dimension}_count`] || 0;
+    const metricName = currentMetric === 'negative' ? 'E_Negative' : 
+                      currentMetric === 'positive' ? 'E_Positive' : 'Equity Gap';
     
     tooltip.innerHTML = `
-        <strong>${d.category}</strong><br>
-        ${dimension.charAt(0).toUpperCase() + dimension.slice(1)}: ${score.toFixed(3)}<br>
-        Standard Deviation: ${std.toFixed(3)}<br>
-        Sample Size: ${count}
+        <strong>${d.group}: ${d.category}</strong><br>
+        ${metricName}: ${d.value.toFixed(3)}<br>
+        Sample Size: ${d.count}<br>
+        <em>${currentMetric === 'negative' ? 'Higher = Worse Equity' : 
+             currentMetric === 'positive' ? 'Higher = Better Equity' : 
+             'Higher = Better Equity Balance'}</em>
     `;
     tooltip.style.opacity = 1;
     tooltip.style.left = (event.pageX + 10) + 'px';

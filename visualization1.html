@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Waffle Chart - Workforce Demographics | The DEI Lens</title>
+    <title>Diversity Distribution Analysis | The DEI Lens</title>
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/visualization1.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,8 +27,8 @@
     <!-- Header -->
     <header class="viz-header">
         <div class="container">
-            <h1>Waffle Chart - Workforce Demographics</h1>
-            <p>Explore employee distribution across demographics through an interactive waffle chart visualization</p>
+            <h1>Diversity Distribution Analysis</h1>
+            <p>Analyze workforce demographics across divisions, age groups, and nationalities with interactive bar charts</p>
         </div>
     </header>
 
@@ -41,34 +41,42 @@
                     <strong>1 (☆☆☆)</strong> What is the distribution of employees by gender, sexual orientation, ethnicity, etc.?
                 </div>
                 <div class="question-item">
+                    <strong>2 (☆☆)</strong> Are certain groups underrepresented in specific departments or under certain managers?
+                </div>
+                <div class="question-item">
                     <strong>3 (☆)</strong> Does diversity vary by age or nationality?
                 </div>
                 <div class="question-item">
-                    <strong>10 (☆☆)</strong> Are there gaps in equity perception among disabled individuals, minorities, or non-veterans?
-                </div>
-                <div class="question-item">
-                    <strong>12 (☆☆☆)</strong> Do LGBTQ+ individuals feel included?
-                </div>
-                <div class="question-item">
-                    <strong>15 (☆☆☆)</strong> Which groups experience multiple layers of marginalization (e.g., minority + LGBTQ + disability)?
+                    <strong>4 (☆)</strong> Which departments are the most diverse?
                 </div>
             </div>
         </div>
 
         <div class="main-viz">
-            <div class="dimension-tabs">
-                <button class="tab-btn active" data-dimension="Gender">Gender</button>
-                <button class="tab-btn" data-dimension="Age_Group">Age</button>
-                <button class="tab-btn" data-dimension="Ethnicity">Ethnicity</button>
-                <button class="tab-btn" data-dimension="Sexual_Orientation">Orientation</button>
-                <button class="tab-btn" data-dimension="LGBTQ">LGBTQ+</button>
-                <button class="tab-btn" data-dimension="Veteran">Veteran</button>
-                <button class="tab-btn" data-dimension="Disability">Disability</button>
-                <button class="tab-btn" data-dimension="Indigenous">Indigenous</button>
+            <div class="chart-controls">
+                <div class="dimension-tabs">
+                    <button class="tab-btn active" data-view="demographics">Demographics Overview</button>
+                    <button class="tab-btn" data-view="divisions">By Division</button>
+                    <button class="tab-btn" data-view="age-groups">By Age Group</button>
+                    <button class="tab-btn" data-view="diversity-index">Diversity Index</button>
+                </div>
+
+                <div class="metric-selector">
+                    <label for="metric-select">Metric:</label>
+                    <select id="metric-select">
+                        <option value="Gender">Gender</option>
+                        <option value="Ethnicity">Ethnicity</option>
+                        <option value="Sexual_Orientation">Sexual Orientation</option>
+                        <option value="LGBTQ">LGBTQ+</option>
+                        <option value="Disability">Disability</option>
+                        <option value="Veteran">Veteran Status</option>
+                        <option value="Indigenous">Indigenous</option>
+                    </select>
+                </div>
             </div>
 
-            <div class="waffle-container">
-                <svg class="waffle-grid" width="600" height="600"></svg>
+            <div class="chart-container">
+                <svg class="main-chart" width="800" height="500"></svg>
                 <div class="legend"></div>
             </div>
         </div>
@@ -84,6 +92,10 @@
                     <span>Filtered:</span>
                     <span id="filtered-count">10,000</span>
                 </div>
+                <div class="stat-item">
+                    <span>Diversity Score:</span>
+                    <span id="diversity-score">N/A</span>
+                </div>
                 <div class="progress-bar">
                     <div class="progress-fill" id="progress-fill"></div>
                 </div>
@@ -91,14 +103,23 @@
 
             <div class="filters-section">
                 <h3>Filters</h3>
-                <div id="filters-container"></div>
                 
                 <div class="filter-group">
-                    <label for="age-min">Age: <span id="age-range">24-65</span></label>
+                    <label for="age-min">Age Range: <span id="age-range">24-65</span></label>
                     <div class="age-slider">
                         <input type="range" id="age-min" min="24" max="65" value="24">
                         <input type="range" id="age-max" min="24" max="65" value="65">
                     </div>
+                </div>
+                
+                <div class="filter-group">
+                    <h4>Divisions</h4>
+                    <div id="division-filters"></div>
+                </div>
+                
+                <div class="filter-group">
+                    <h4>Nationalities</h4>
+                    <div id="nationality-filters"></div>
                 </div>
             </div>
         </div>

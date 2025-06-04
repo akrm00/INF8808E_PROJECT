@@ -1,9 +1,9 @@
 // Configuration
-const gridSize = 100;
-const cellSize = 6;
-const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+const margin = { top: 40, right: 80, bottom: 80, left: 80 };
+const width = 800 - margin.left - margin.right;
+const height = 500 - margin.top - margin.bottom;
 
-// Color schemes for different dimensions
+// Color schemes for different metrics
 const colorSchemes = {
     Gender: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3'],
     Age_Group: ['#ff6b6b', '#feca57', '#48dbfb', '#0abde3'],
@@ -18,8 +18,14 @@ const colorSchemes = {
 // Global variables
 let data = [];
 let filteredData = [];
-let currentDimension = 'Gender';
-let activeFilters = {};
+let currentView = 'demographics';
+let currentMetric = 'Gender';
+let activeFilters = {
+    divisions: new Set(),
+    nationalities: new Set(),
+    ageMin: 24,
+    ageMax: 65
+};
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
@@ -36,6 +42,7 @@ async function loadData() {
             name: d.Name,
             surname: d.Surname,
             division: d.Division,
+            manager: d.Manager,
             nationality: d.Nationality,
             gender: d.Gender,
             sexualOrientation: d.Sexual_Orientation,
@@ -45,14 +52,12 @@ async function loadData() {
             disability: d.Disability,
             veteran: d.Veteran,
             age: +d.Age,
-            ageGroup: getAgeGroup(+d.Age),
-            x: i % gridSize,
-            y: Math.floor(i / gridSize)
+            ageGroup: getAgeGroup(+d.Age)
         }));
 
         filteredData = [...data];
+        initializeFilters();
         updateVisualization();
-        createFilters();
         updateStats();
     } catch (error) {
         console.error('Error loading data:', error);
@@ -69,14 +74,20 @@ function getAgeGroup(age) {
 
 // Setup event listeners
 function setupEventListeners() {
-    
+    // View tabs
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-            currentDimension = this.dataset.dimension;
+            currentView = this.dataset.view;
             updateVisualization();
         });
+    });
+
+    // Metric selector
+    document.getElementById('metric-select').addEventListener('change', function() {
+        currentMetric = this.value;
+        updateVisualization();
     });
 
     // Age sliders
@@ -89,38 +100,97 @@ function setupEventListeners() {
             const max = Math.max(+ageMin.value, +ageMax.value);
             ageMin.value = min;
             ageMax.value = max;
+            activeFilters.ageMin = min;
+            activeFilters.ageMax = max;
             document.getElementById('age-range').textContent = `${min}-${max}`;
             filterData();
         });
     });
 }
 
-// Create filter checkboxes
-function createFilters() {
-    const container = document.getElementById('filters-container');
-    const dimensions = ['Gender', 'LGBTQ', 'Ethnicity', 'Sexual_Orientation', 'Veteran', 'Disability', 'Indigenous'];
+// Initialize filter checkboxes
+function initializeFilters() {
+    // Division filters
+    const divisions = [...new Set(data.map(d => d.division))].sort();
+    const divisionContainer = document.getElementById('division-filters');
     
-    dimensions.forEach(dim => {
-        const values = [...new Set(data.map(d => getDimensionValue(d, dim)))].filter(v => v);
-        
-        const group = document.createElement('div');
-        group.className = 'filter-group';
-        group.innerHTML = `<h4 style="color: #f9fafb; font-size: 0.9rem; margin-bottom: 0.5rem;">${dim}</h4>`;
-        
-        values.forEach(value => {
-            const item = document.createElement('div');
-            item.className = 'filter-item';
-            item.innerHTML = `
-                <input type="checkbox" id="${dim}-${value}" checked data-dimension="${dim}" data-value="${value}">
-                <label for="${dim}-${value}">${value}</label>
-            `;
-            
-            item.querySelector('input').addEventListener('change', filterData);
-            group.appendChild(item);
-        });
-        
-        container.appendChild(group);
+    divisions.forEach(division => {
+        const item = document.createElement('div');
+        item.className = 'filter-item';
+        item.innerHTML = `
+            <input type="checkbox" id="div-${division}" checked data-type="division" data-value="${division}">
+            <label for="div-${division}">${division}</label>
+        `;
+        item.querySelector('input').addEventListener('change', handleFilterChange);
+        divisionContainer.appendChild(item);
+        activeFilters.divisions.add(division);
     });
+
+    // Nationality filters - show only top 10 most common
+    const nationalityCounts = {};
+    data.forEach(d => {
+        nationalityCounts[d.nationality] = (nationalityCounts[d.nationality] || 0) + 1;
+    });
+    
+    const topNationalities = Object.entries(nationalityCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(d => d[0]);
+    
+    const nationalityContainer = document.getElementById('nationality-filters');
+    
+    topNationalities.forEach(nationality => {
+        const item = document.createElement('div');
+        item.className = 'filter-item';
+        item.innerHTML = `
+            <input type="checkbox" id="nat-${nationality}" checked data-type="nationality" data-value="${nationality}">
+            <label for="nat-${nationality}">${nationality}</label>
+        `;
+        item.querySelector('input').addEventListener('change', handleFilterChange);
+        nationalityContainer.appendChild(item);
+        activeFilters.nationalities.add(nationality);
+    });
+}
+
+// Handle filter changes
+function handleFilterChange(event) {
+    const type = event.target.dataset.type;
+    const value = event.target.dataset.value;
+    
+    if (type === 'division') {
+        if (event.target.checked) {
+            activeFilters.divisions.add(value);
+        } else {
+            activeFilters.divisions.delete(value);
+        }
+    } else if (type === 'nationality') {
+        if (event.target.checked) {
+            activeFilters.nationalities.add(value);
+        } else {
+            activeFilters.nationalities.delete(value);
+        }
+    }
+    
+    filterData();
+}
+
+// Filter data based on active filters
+function filterData() {
+    filteredData = data.filter(d => {
+        // Age filter
+        if (d.age < activeFilters.ageMin || d.age > activeFilters.ageMax) return false;
+        
+        // Division filter
+        if (activeFilters.divisions.size > 0 && !activeFilters.divisions.has(d.division)) return false;
+        
+        // Nationality filter
+        if (activeFilters.nationalities.size > 0 && !activeFilters.nationalities.has(d.nationality)) return false;
+        
+        return true;
+    });
+
+    updateVisualization();
+    updateStats();
 }
 
 // Get dimension value for data point
@@ -138,83 +208,504 @@ function getDimensionValue(d, dimension) {
     return mapping[dimension];
 }
 
-// Filter data based on active filters
-function filterData() {
-    const ageMin = +document.getElementById('age-min').value;
-    const ageMax = +document.getElementById('age-max').value;
-    
-    // Get active checkboxes
-    const activeCheckboxes = {};
-    document.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
-        const dim = cb.dataset.dimension;
-        const value = cb.dataset.value;
-        if (!activeCheckboxes[dim]) activeCheckboxes[dim] = [];
-        activeCheckboxes[dim].push(value);
-    });
-
-    filteredData = data.filter(d => {
-        // Age filter
-        if (d.age < ageMin || d.age > ageMax) return false;
-        
-        
-        for (const [dim, values] of Object.entries(activeCheckboxes)) {
-            if (!values.includes(getDimensionValue(d, dim))) return false;
-        }
-        
-        return true;
-    });
-
-    updateVisualization();
-    updateStats();
-}
-
-// Update visualization
+// Update visualization based on current view
 function updateVisualization() {
-    const svg = d3.select('.waffle-grid');
+    const svg = d3.select('.main-chart');
     svg.selectAll('*').remove();
 
-    
-    const values = [...new Set(filteredData.map(d => getDimensionValue(d, currentDimension)))].filter(v => v);
-    const colorScale = d3.scaleOrdinal()
-        .domain(values)
-        .range(colorSchemes[currentDimension] || d3.schemeCategory10);
+    const g = svg
+        .append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
 
+    switch(currentView) {
+        case 'demographics':
+            drawDemographicsOverview(g);
+            break;
+        case 'divisions':
+            drawByDivision(g);
+            break;
+        case 'age-groups':
+            drawByAgeGroup(g);
+            break;
+        case 'diversity-index':
+            drawDiversityIndex(g);
+            break;
+    }
+}
+
+// Draw demographics overview (Question 1)
+function drawDemographicsOverview(g) {
+    const metricValues = [...new Set(filteredData.map(d => getDimensionValue(d, currentMetric)))].filter(v => v);
+    const counts = {};
     
-    const gridData = Array(gridSize * gridSize).fill(null).map((_, i) => {
-        const dataPoint = filteredData[i];
+    metricValues.forEach(value => {
+        counts[value] = filteredData.filter(d => getDimensionValue(d, currentMetric) === value).length;
+    });
+
+    const data = Object.entries(counts).map(([key, value]) => ({ key, value }));
+    data.sort((a, b) => b.value - a.value);
+
+    const xScale = d3.scaleBand()
+        .domain(data.map(d => d.key))
+        .range([0, width])
+        .padding(0.4);
+
+    const yScale = d3.scaleLinear()
+        .domain([0, d3.max(data, d => d.value)])
+        .range([height, 0]);
+
+    const colorScale = d3.scaleOrdinal()
+        .domain(metricValues)
+        .range(colorSchemes[currentMetric] || d3.schemeCategory10);
+
+    // Bars
+    g.selectAll('.bar')
+        .data(data)
+        .enter()
+        .append('rect')
+        .attr('class', 'bar')
+        .attr('x', d => xScale(d.key))
+        .attr('y', d => yScale(d.value))
+        .attr('width', xScale.bandwidth())
+        .attr('height', d => height - yScale(d.value))
+        .attr('fill', d => colorScale(d.key))
+        .attr('opacity', 0.8)
+        .on('mouseover', function(event, d) {
+            showTooltip(event, `${d.key}: ${d.value} employees (${(d.value/filteredData.length*100).toFixed(1)}%)`);
+            d3.select(this).attr('opacity', 1);
+        })
+        .on('mouseout', function() {
+            hideTooltip();
+            d3.select(this).attr('opacity', 0.8);
+        });
+
+    // Labels on bars
+    g.selectAll('.bar-label')
+        .data(data)
+        .enter()
+        .append('text')
+        .attr('class', 'bar-label')
+        .attr('x', d => xScale(d.key) + xScale.bandwidth() / 2)
+        .attr('y', d => yScale(d.value) - 5)
+        .attr('text-anchor', 'middle')
+        .style('fill', '#f9fafb')
+        .style('font-size', '12px')
+        .text(d => d.value);
+
+    // Axes
+    g.append('g')
+        .attr('transform', `translate(0,${height})`)
+        .call(d3.axisBottom(xScale))
+        .selectAll('text')
+        .style('fill', '#d1d5db')
+        .style('font-size', '11px')
+        .style('text-anchor', 'end')
+        .attr('dx', '-.8em')
+        .attr('dy', '.15em')
+        .attr('transform', 'rotate(-35)');
+
+    g.append('g')
+        .call(d3.axisLeft(yScale))
+        .selectAll('text')
+        .style('fill', '#d1d5db')
+        .style('font-size', '12px');
+
+    // Axis labels
+    g.append('text')
+        .attr('transform', 'rotate(-90)')
+        .attr('y', 0 - margin.left)
+        .attr('x', 0 - (height / 2))
+        .attr('dy', '1em')
+        .style('text-anchor', 'middle')
+        .style('fill', '#d1d5db')
+        .style('font-size', '11px')
+        .text('Number of Employees');
+
+    g.append('text')
+        .attr('transform', `translate(${width / 2}, ${height + margin.bottom - 10})`)
+        .style('text-anchor', 'middle')
+        .style('fill', '#d1d5db')
+        .style('font-size', '11px')
+        .text(currentMetric);
+
+    // Title
+    g.append('text')
+        .attr('x', width / 2)
+        .attr('y', -20)
+        .attr('text-anchor', 'middle')
+        .style('fill', '#f9fafb')
+        .style('font-size', '16px')
+        .style('font-weight', 'bold')
+        .text(`Distribution by ${currentMetric}`);
+
+    updateLegend(metricValues, colorScale);
+}
+
+// Draw by division (Questions 2 & 4)
+function drawByDivision(g) {
+    const divisions = [...new Set(filteredData.map(d => d.division))].sort();
+    const metricValues = [...new Set(filteredData.map(d => getDimensionValue(d, currentMetric)))].filter(v => v);
+    
+    const data = divisions.map(division => {
+        const divisionData = filteredData.filter(d => d.division === division);
+        const counts = {};
+        metricValues.forEach(value => {
+            counts[value] = divisionData.filter(d => getDimensionValue(d, currentMetric) === value).length;
+        });
         return {
-            x: i % gridSize,
-            y: Math.floor(i / gridSize),
-            data: dataPoint
+            division,
+            total: divisionData.length,
+            values: metricValues.map(value => ({
+                key: value,
+                value: counts[value] || 0,
+                percentage: divisionData.length > 0 ? (counts[value] || 0) / divisionData.length * 100 : 0
+            }))
         };
     });
 
-   
-    const cells = svg.selectAll('.waffle-cell')
-        .data(gridData);
+    const x0Scale = d3.scaleBand()
+        .domain(divisions)
+        .range([0, width])
+        .padding(0.3);
 
-    cells.enter()
+    const x1Scale = d3.scaleBand()
+        .domain(metricValues)
+        .range([0, x0Scale.bandwidth()])
+        .padding(0.15);
+
+    const yScale = d3.scaleLinear()
+        .domain([0, d3.max(data, d => d3.max(d.values, v => v.value))])
+        .range([height, 0]);
+
+    const colorScale = d3.scaleOrdinal()
+        .domain(metricValues)
+        .range(colorSchemes[currentMetric] || d3.schemeCategory10);
+
+    // Grouped bars
+    const divisionGroups = g.selectAll('.division-group')
+        .data(data)
+        .enter()
+        .append('g')
+        .attr('class', 'division-group')
+        .attr('transform', d => `translate(${x0Scale(d.division)},0)`);
+
+    divisionGroups.selectAll('.bar')
+        .data(d => d.values)
+        .enter()
         .append('rect')
-        .attr('class', 'waffle-cell')
-        .attr('x', d => d.x * cellSize)
-        .attr('y', d => d.y * cellSize)
-        .attr('width', cellSize - 0.5)
-        .attr('height', cellSize - 0.5)
-        .attr('fill', d => d.data ? colorScale(getDimensionValue(d.data, currentDimension)) : '#2a2a2a')
-        .attr('opacity', d => d.data ? 1 : 0.3)
+        .attr('class', 'bar')
+        .attr('x', d => x1Scale(d.key))
+        .attr('y', d => yScale(d.value))
+        .attr('width', x1Scale.bandwidth())
+        .attr('height', d => height - yScale(d.value))
+        .attr('fill', d => colorScale(d.key))
+        .attr('opacity', 0.8)
         .on('mouseover', function(event, d) {
-            if (d.data) showTooltip(event, d.data);
+            const division = d3.select(this.parentNode).datum().division;
+            showTooltip(event, `${division} - ${d.key}: ${d.value} employees (${d.percentage.toFixed(1)}%)`);
+            d3.select(this).attr('opacity', 1);
         })
-        .on('mouseout', hideTooltip);
+        .on('mouseout', function() {
+            hideTooltip();
+            d3.select(this).attr('opacity', 0.8);
+        });
 
+    // Axes
+    g.append('g')
+        .attr('transform', `translate(0,${height})`)
+        .call(d3.axisBottom(x0Scale))
+        .selectAll('text')
+        .style('fill', '#d1d5db')
+        .style('font-size', '12px')
+        .style('text-anchor', 'end')
+        .attr('dx', '-.8em')
+        .attr('dy', '.15em')
+        .attr('transform', 'rotate(-45)');
+
+    g.append('g')
+        .call(d3.axisLeft(yScale))
+        .selectAll('text')
+        .style('fill', '#d1d5db')
+        .style('font-size', '12px');
+
+    // Axis labels
+    g.append('text')
+        .attr('transform', 'rotate(-90)')
+        .attr('y', 0 - margin.left)
+        .attr('x', 0 - (height / 2))
+        .attr('dy', '1em')
+        .style('text-anchor', 'middle')
+        .style('fill', '#d1d5db')
+        .style('font-size', '11px')
+        .text('Number of Employees');
+
+    g.append('text')
+        .attr('transform', `translate(${width / 2}, ${height + margin.bottom - 10})`)
+        .style('text-anchor', 'middle')
+        .style('fill', '#d1d5db')
+        .style('font-size', '11px')
+        .text('Division');
+
+    // Title
+    g.append('text')
+        .attr('x', width / 2)
+        .attr('y', -20)
+        .attr('text-anchor', 'middle')
+        .style('fill', '#f9fafb')
+        .style('font-size', '16px')
+        .style('font-weight', 'bold')
+        .text(`${currentMetric} Distribution by Division`);
+
+    updateLegend(metricValues, colorScale);
+}
+
+// Draw by age group (Question 3)
+function drawByAgeGroup(g) {
+    const ageGroups = ['24-31', '31-37', '37-44', '44-65'];
+    const metricValues = [...new Set(filteredData.map(d => getDimensionValue(d, currentMetric)))].filter(v => v);
     
-    updateLegend(values, colorScale);
+    const data = ageGroups.map(ageGroup => {
+        const ageGroupData = filteredData.filter(d => d.ageGroup === ageGroup);
+        const counts = {};
+        metricValues.forEach(value => {
+            counts[value] = ageGroupData.filter(d => getDimensionValue(d, currentMetric) === value).length;
+        });
+        return {
+            ageGroup,
+            total: ageGroupData.length,
+            values: metricValues.map(value => ({
+                key: value,
+                value: counts[value] || 0,
+                percentage: ageGroupData.length > 0 ? (counts[value] || 0) / ageGroupData.length * 100 : 0
+            }))
+        };
+    });
+
+    const x0Scale = d3.scaleBand()
+        .domain(ageGroups)
+        .range([0, width])
+        .padding(0.2);
+
+    const x1Scale = d3.scaleBand()
+        .domain(metricValues)
+        .range([0, x0Scale.bandwidth()])
+        .padding(0.1);
+
+    const yScale = d3.scaleLinear()
+        .domain([0, d3.max(data, d => d3.max(d.values, v => v.value))])
+        .range([height, 0]);
+
+    const colorScale = d3.scaleOrdinal()
+        .domain(metricValues)
+        .range(colorSchemes[currentMetric] || d3.schemeCategory10);
+
+    // Grouped bars
+    const ageGroups_g = g.selectAll('.age-group')
+        .data(data)
+        .enter()
+        .append('g')
+        .attr('class', 'age-group')
+        .attr('transform', d => `translate(${x0Scale(d.ageGroup)},0)`);
+
+    ageGroups_g.selectAll('.bar')
+        .data(d => d.values)
+        .enter()
+        .append('rect')
+        .attr('class', 'bar')
+        .attr('x', d => x1Scale(d.key))
+        .attr('y', d => yScale(d.value))
+        .attr('width', x1Scale.bandwidth())
+        .attr('height', d => height - yScale(d.value))
+        .attr('fill', d => colorScale(d.key))
+        .attr('opacity', 0.8)
+        .on('mouseover', function(event, d) {
+            const ageGroup = d3.select(this.parentNode).datum().ageGroup;
+            showTooltip(event, `Age ${ageGroup} - ${d.key}: ${d.value} employees (${d.percentage.toFixed(1)}%)`);
+            d3.select(this).attr('opacity', 1);
+        })
+        .on('mouseout', function() {
+            hideTooltip();
+            d3.select(this).attr('opacity', 0.8);
+        });
+
+    // Axes
+    g.append('g')
+        .attr('transform', `translate(0,${height})`)
+        .call(d3.axisBottom(x0Scale))
+        .selectAll('text')
+        .style('fill', '#d1d5db')
+        .style('font-size', '12px');
+
+    g.append('g')
+        .call(d3.axisLeft(yScale))
+        .selectAll('text')
+        .style('fill', '#d1d5db')
+        .style('font-size', '12px');
+
+    // Axis labels
+    g.append('text')
+        .attr('transform', 'rotate(-90)')
+        .attr('y', 0 - margin.left)
+        .attr('x', 0 - (height / 2))
+        .attr('dy', '1em')
+        .style('text-anchor', 'middle')
+        .style('fill', '#d1d5db')
+        .style('font-size', '11px')
+        .text('Number of Employees');
+
+    g.append('text')
+        .attr('transform', `translate(${width / 2}, ${height + margin.bottom - 10})`)
+        .style('text-anchor', 'middle')
+        .style('fill', '#d1d5db')
+        .style('font-size', '11px')
+        .text('Age Group');
+
+    // Title
+    g.append('text')
+        .attr('x', width / 2)
+        .attr('y', -20)
+        .attr('text-anchor', 'middle')
+        .style('fill', '#f9fafb')
+        .style('font-size', '16px')
+        .style('font-weight', 'bold')
+        .text(`${currentMetric} Distribution by Age Group`);
+
+    updateLegend(metricValues, colorScale);
+}
+
+// Draw diversity index (Question 4)
+function drawDiversityIndex(g) {
+    const divisions = [...new Set(filteredData.map(d => d.division))].sort();
+    
+    const data = divisions.map(division => {
+        const divisionData = filteredData.filter(d => d.division === division);
+        
+        // Calculate diversity score (Simpson's Diversity Index)
+        const metricCounts = {};
+        divisionData.forEach(d => {
+            const value = getDimensionValue(d, currentMetric);
+            metricCounts[value] = (metricCounts[value] || 0) + 1;
+        });
+        
+        const total = divisionData.length;
+        let diversityScore = 0;
+        
+        if (total > 0) {
+            const proportions = Object.values(metricCounts).map(count => count / total);
+            diversityScore = 1 - proportions.reduce((sum, p) => sum + p * p, 0);
+        }
+        
+        return {
+            division,
+            diversityScore: diversityScore * 100, // Convert to percentage
+            total
+        };
+    });
+
+    data.sort((a, b) => b.diversityScore - a.diversityScore);
+
+    const xScale = d3.scaleBand()
+        .domain(data.map(d => d.division))
+        .range([0, width])
+        .padding(0.2);
+
+    const yScale = d3.scaleLinear()
+        .domain([0, 100])
+        .range([height, 0]);
+
+    const colorScale = d3.scaleSequential(d3.interpolateViridis)
+        .domain([0, 100]);
+
+    // Bars
+    g.selectAll('.bar')
+        .data(data)
+        .enter()
+        .append('rect')
+        .attr('class', 'bar')
+        .attr('x', d => xScale(d.division))
+        .attr('y', d => yScale(d.diversityScore))
+        .attr('width', xScale.bandwidth())
+        .attr('height', d => height - yScale(d.diversityScore))
+        .attr('fill', d => colorScale(d.diversityScore))
+        .attr('opacity', 0.8)
+        .on('mouseover', function(event, d) {
+            showTooltip(event, `${d.division}: ${d.diversityScore.toFixed(1)}% diversity score (${d.total} employees)`);
+            d3.select(this).attr('opacity', 1);
+        })
+        .on('mouseout', function() {
+            hideTooltip();
+            d3.select(this).attr('opacity', 0.8);
+        });
+
+    // Labels on bars
+    g.selectAll('.bar-label')
+        .data(data)
+        .enter()
+        .append('text')
+        .attr('class', 'bar-label')
+        .attr('x', d => xScale(d.division) + xScale.bandwidth() / 2)
+        .attr('y', d => yScale(d.diversityScore) - 5)
+        .attr('text-anchor', 'middle')
+        .style('fill', '#f9fafb')
+        .style('font-size', '12px')
+        .text(d => d.diversityScore.toFixed(1) + '%');
+
+    // Axes
+    g.append('g')
+        .attr('transform', `translate(0,${height})`)
+        .call(d3.axisBottom(xScale))
+        .selectAll('text')
+        .style('fill', '#d1d5db')
+        .style('font-size', '12px')
+        .style('text-anchor', 'end')
+        .attr('dx', '-.8em')
+        .attr('dy', '.15em')
+        .attr('transform', 'rotate(-45)');
+
+    g.append('g')
+        .call(d3.axisLeft(yScale))
+        .selectAll('text')
+        .style('fill', '#d1d5db')
+        .style('font-size', '12px');
+
+    // Axis labels
+    g.append('text')
+        .attr('transform', 'rotate(-90)')
+        .attr('y', 0 - margin.left)
+        .attr('x', 0 - (height / 2))
+        .attr('dy', '1em')
+        .style('text-anchor', 'middle')
+        .style('fill', '#d1d5db')
+        .style('font-size', '11px')
+        .text('Diversity Score (%)');
+
+    g.append('text')
+        .attr('transform', `translate(${width / 2}, ${height + margin.bottom - 10})`)
+        .style('text-anchor', 'middle')
+        .style('fill', '#d1d5db')
+        .style('font-size', '11px')
+        .text('Division');
+
+    // Title
+    g.append('text')
+        .attr('x', width / 2)
+        .attr('y', -20)
+        .attr('text-anchor', 'middle')
+        .style('fill', '#f9fafb')
+        .style('font-size', '16px')
+        .style('font-weight', 'bold')
+        .text(`Diversity Index by Division (${currentMetric})`);
+
+    // Remove legend for diversity index view
+    d3.select('.legend').selectAll('*').remove();
 }
 
 // Update legend
 function updateLegend(values, colorScale) {
     const legend = d3.select('.legend');
     legend.selectAll('*').remove();
+
+    if (!values || values.length === 0) return;
 
     const legendItems = legend.selectAll('.legend-item')
         .data(values)
@@ -235,19 +726,31 @@ function updateStats() {
     document.getElementById('total-count').textContent = data.length.toLocaleString();
     document.getElementById('filtered-count').textContent = filteredData.length.toLocaleString();
     
+    // Calculate overall diversity score
+    const metricCounts = {};
+    filteredData.forEach(d => {
+        const value = getDimensionValue(d, currentMetric);
+        metricCounts[value] = (metricCounts[value] || 0) + 1;
+    });
+    
+    const total = filteredData.length;
+    let diversityScore = 0;
+    
+    if (total > 0) {
+        const proportions = Object.values(metricCounts).map(count => count / total);
+        diversityScore = 1 - proportions.reduce((sum, p) => sum + p * p, 0);
+    }
+    
+    document.getElementById('diversity-score').textContent = (diversityScore * 100).toFixed(1) + '%';
+    
     const percentage = (filteredData.length / data.length) * 100;
     document.getElementById('progress-fill').style.width = `${percentage}%`;
 }
 
 // Tooltip functions
-function showTooltip(event, d) {
+function showTooltip(event, content) {
     const tooltip = document.getElementById('tooltip');
-    tooltip.innerHTML = `
-        <strong>${d.name} ${d.surname}</strong><br>
-        Division: ${d.division}<br>
-        Nationality: ${d.nationality}<br>
-        Age: ${d.age} years
-    `;
+    tooltip.innerHTML = content;
     tooltip.style.opacity = 1;
     tooltip.style.left = (event.pageX + 10) + 'px';
     tooltip.style.top = (event.pageY - 10) + 'px';

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Intersectional DEI Analysis | The DEI Lens</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/visualization5.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body class="viz-page">
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb">
+        <div class="breadcrumb-container">
+            <a href="index.html">Home</a>
+            <span class="separator">></span>
+            <span>Visualization 5</span>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="viz-header">
+        <div class="container">
+            <h1>Intersectional DEI Analysis</h1>
+            <p>Identify multiple layers of marginalization and strategic improvement opportunities across demographic intersections</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="viz-content">
+        <div class="questions-panel">
+            <h3>Questions Analyzed</h3>
+            <div class="question-list">
+                <div class="question-item">
+                    <strong>15 (☆☆☆)</strong> Which groups experience multiple layers of marginalization (e.g., minority + LGBTQ + disability)?
+                </div>
+                <div class="question-item">
+                    <strong>16 (☆☆)</strong> Which departments perform well despite high diversity?
+                </div>
+                <div class="question-item">
+                    <strong>17 (☆☆)</strong> Can we identify targeted improvement levers from the results?
+                </div>
+            </div>
+        </div>
+
+        <div class="main-viz">
+            <div class="chart-controls">
+                <div class="view-tabs">
+                    <button class="tab-btn active" data-view="intersectional">Intersectional Groups</button>
+                    <button class="tab-btn" data-view="department-performance">Department Performance</button>
+                </div>
+
+                <div class="metric-controls">
+                    <div class="metric-selector">
+                        <label for="score-type">DEI Score:</label>
+                        <select id="score-type">
+                            <option value="overall">Overall DEI Score</option>
+                            <option value="diversity">Diversity Score</option>
+                            <option value="equity">Equity Score</option>
+                            <option value="inclusion">Inclusion Score</option>
+                        </select>
+                    </div>
+                    
+                    <button class="control-btn" id="sort-groups">Sort by Score</button>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <svg class="main-chart" width="900" height="500"></svg>
+                <div class="legend-container"></div>
+            </div>
+        </div>
+
+        <div class="controls-panel">
+            <div class="stats-panel">
+                <h3>Statistics</h3>
+                <div class="stat-item">
+                    <span>Total Groups:</span>
+                    <span id="total-groups">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Critical Groups:</span>
+                    <span id="critical-groups">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Best Performing:</span>
+                    <span id="best-group">N/A</span>
+                </div>
+                <div class="stat-item">
+                    <span>Needs Attention:</span>
+                    <span id="worst-group">N/A</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
+
+            <div class="filters-section">
+                <h3>Intersectional Filters</h3>
+                
+                <div class="filter-group">
+                    <h4>Identity Dimensions</h4>
+                    <div class="filter-item">
+                        <input type="checkbox" id="filter-minority" checked>
+                        <label for="filter-minority">Include Minorities</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="filter-lgbtq" checked>
+                        <label for="filter-lgbtq">Include LGBTQ+</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="filter-disability" checked>
+                        <label for="filter-disability">Include Disabilities</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="filter-indigenous" checked>
+                        <label for="filter-indigenous">Include Indigenous</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="filter-veteran" checked>
+                        <label for="filter-veteran">Include Veterans</label>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h4>Minimum Sample Size</h4>
+                    <label for="min-size">Min. employees: <span id="min-size-value">10</span></label>
+                    <input type="range" id="min-size" min="5" max="50" value="10">
+                </div>
+
+                <div class="filter-group">
+                    <h4>Departments</h4>
+                    <div id="department-filters"></div>
+                </div>
+
+                <div class="filter-group">
+                    <h4>Score Threshold</h4>
+                    <label for="score-threshold">Critical score: <span id="threshold-value">-0.5</span></label>
+                    <input type="range" id="score-threshold" min="-2" max="0" step="0.1" value="-0.5">
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script src="scripts/visualization5.js"></script>
+</body>
+</html>

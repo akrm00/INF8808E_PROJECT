@@ -1,35 +1,19 @@
-// Configuration for Heatmap Visualization
-const margin = { top: 50, right: 50, bottom: 80, left: 120 };
-const width = 700 - margin.left - margin.right;
+// Configuration for Bar Chart Visualization
+const margin = { top: 50, right: 50, bottom: 100, left: 80 };
+const width = 800 - margin.left - margin.right;
 const height = 500 - margin.top - margin.bottom;
 
 // Global variables
 let data = [];
-let heatmapData = [];
-let currentView = 'positive';
-let activeFilters = {
-    manager: ['true', 'false'],
-    dimension: ['diversity', 'equity', 'inclusion']
-};
-
-// DEI metric mappings
-const deiMetrics = {
-    positive: ['D_Positive', 'E_Positive', 'I_Positive'],
-    negative: ['D_Negative', 'E_Negative', 'I_Negative'],
-    combined: ['D_Combined', 'E_Combined', 'I_Combined']
-};
-
-// Color schemes
-const colorSchemes = {
-    positive: d3.interpolateGreens,
-    negative: d3.interpolateReds,
-    combined: d3.interpolateRdYlGn
-};
+let currentView = 'gender';
+let currentScoreType = 'diversity';
+let activeDepartments = [];
+let minGroupSize = 5;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     loadData();
-    setupEventListeners();
+    setupEventListeners(); 
 });
 
 // Load and process data
@@ -37,30 +21,32 @@ async function loadData() {
     try {
         const rawData = await d3.csv('./data/deidataset.csv');
         
-        
         data = rawData.map(d => {
-            
-            const dPositive = calculateAverage([d.Aug_D_Q1, d.Aug_D_Q2, d.Aug_D_Q3, d.Aug_D_Q4, d.Aug_D_Q5]);
-            const ePositive = calculateAverage([d.Aug_E_Q1, d.Aug_E_Q2, d.Aug_E_Q3, d.Aug_E_Q4, d.Aug_E_Q5]);
-            const iPositive = calculateAverage([d.Aug_I_Q1, d.Aug_I_Q2, d.Aug_I_Q3, d.Aug_I_Q4, d.Aug_I_Q5]);
+            // Calculate diversity scores as average of diversity questions
+            const diversityQuestions = [+d.Aug_D_Q1, +d.Aug_D_Q2, +d.Aug_D_Q3, +d.Aug_D_Q4, +d.Aug_D_Q5];
+            const validDiversityScores = diversityQuestions.filter(score => !isNaN(score));
+            const avgDiversityScore = validDiversityScores.length > 0 ? 
+                validDiversityScores.reduce((a, b) => a + b) / validDiversityScores.length : 0;
             
             return {
                 id: +d.Id,
                 division: d.Division,
                 manager: d.Manager === 'True',
-                D_Positive: dPositive,
-                E_Positive: ePositive,
-                I_Positive: iPositive,
-                D_Negative: d.D_Negative ? +d.D_Negative : -dPositive + Math.random() * 0.5,
-                E_Negative: d.E_Negative ? +d.E_Negative : -ePositive + Math.random() * 0.5,
-                I_Negative: d.I_Negative ? +d.I_Negative : -iPositive + Math.random() * 0.5,
-                D_Combined: dPositive,
-                E_Combined: ePositive,
-                I_Combined: iPositive
+                gender: d.Gender,
+                ethnicity: d.Ethnicity,
+                lgbtq: d.LGBTQ,
+                disability: d.Disability,
+                indigenous: d.Indigenous,
+                diversityAvg: avgDiversityScore,
+                diversityPositive: +d.D_Positive || 0,
+                diversityNegative: +d.D_Negative || 0
             };
         });
 
-        createHeatmapData();
+        // Get unique departments for filters
+        activeDepartments = [...new Set(data.map(d => d.division))];
+        createDepartmentFilters();
+        
         createVisualization();
         updateStats();
     } catch (error) {
@@ -68,158 +54,242 @@ async function loadData() {
     }
 }
 
-// Helper function to calculate average
-function calculateAverage(values) {
-    const numericValues = values.map(v => +v).filter(v => !isNaN(v));
-    return numericValues.length > 0 ? numericValues.reduce((a, b) => a + b, 0) / numericValues.length : 0;
-}
-
-// Create heatmap data structure
-function createHeatmapData() {
-    const divisions = [...new Set(data.map(d => d.division))].sort();
-    const metrics = deiMetrics[currentView];
+// Create department filter checkboxes
+function createDepartmentFilters() {
+    const container = document.getElementById('department-filters');
+    container.innerHTML = '';
     
-    heatmapData = [];
-    
-    divisions.forEach(division => {
-        metrics.forEach(metric => {
-            const filteredData = data.filter(d => {
-                return d.division === division &&
-                       activeFilters.manager.includes(d.manager.toString()) &&
-                       shouldIncludeMetric(metric);
-            });
-            
-            if (filteredData.length > 0) {
-                const values = filteredData.map(d => d[metric]).filter(v => !isNaN(v));
-                const avgScore = values.reduce((a, b) => a + b, 0) / values.length;
-                
-                heatmapData.push({
-                    division: division,
-                    metric: metric,
-                    value: avgScore,
-                    count: filteredData.length
-                });
-            }
-        });
+    activeDepartments.forEach(dept => {
+        const div = document.createElement('div');
+        div.className = 'filter-item';
+        div.innerHTML = `
+            <input type="checkbox" id="dept-${dept.replace(/\s+/g, '')}" checked data-filter="division" data-value="${dept}">
+            <label for="dept-${dept.replace(/\s+/g, '')}">${dept}</label>
+        `;
+        container.appendChild(div);
     });
-}
-
-// Check if metric should be included based on dimension filters
-function shouldIncludeMetric(metric) {
-    if (metric.includes('D_') && !activeFilters.dimension.includes('diversity')) return false;
-    if (metric.includes('E_') && !activeFilters.dimension.includes('equity')) return false;
-    if (metric.includes('I_') && !activeFilters.dimension.includes('inclusion')) return false;
-    return true;
+    
+    // Add event listeners to new checkboxes
+    container.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', updateVisualization);
+    });
 }
 
 // Setup event listeners
 function setupEventListeners() {
-    
+    // Tab buttons
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
             currentView = this.dataset.view;
-            createHeatmapData();
-            updateVisualization();
-        });
-    });
-
-
-    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const filter = this.dataset.filter;
-            const value = this.dataset.value;
-            
-            if (this.checked) {
-                if (!activeFilters[filter].includes(value)) {
-                    activeFilters[filter].push(value);
-                }
-            } else {
-                activeFilters[filter] = activeFilters[filter].filter(v => v !== value);
-            }
-            
-            createHeatmapData();
-            updateVisualization();
+            createVisualization();
             updateStats();
         });
     });
 
-    
-    const scoreMin = document.getElementById('score-min');
-    const scoreMax = document.getElementById('score-max');
-    
-    [scoreMin, scoreMax].forEach(slider => {
-        slider.addEventListener('input', function() {
-            const min = Math.min(+scoreMin.value, +scoreMax.value);
-            const max = Math.max(+scoreMin.value, +scoreMax.value);
-            scoreMin.value = min;
-            scoreMax.value = max;
-            document.getElementById('score-range').textContent = `${min.toFixed(1)} to ${max.toFixed(1)}`;
-            updateVisualization();
+    // Score type radio buttons
+    document.querySelectorAll('input[name="score-type"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            currentScoreType = this.value;
+            createVisualization();
+            updateStats();
         });
     });
+
+    // Department filters
+    document.getElementById('dept-all').addEventListener('change', function() {
+        const isChecked = this.checked;
+        document.querySelectorAll('#department-filters input[type="checkbox"]').forEach(cb => {
+            cb.checked = isChecked;
+        });
+        updateVisualization();
+    });
+
+    // Minimum group size slider
+    const groupSizeSlider = document.getElementById('min-group-size');
+    groupSizeSlider.addEventListener('input', function() {
+        minGroupSize = +this.value;
+        document.getElementById('min-size-value').textContent = minGroupSize;
+        updateVisualization();
+    });
+}
+
+// Get filtered data based on current filters
+function getFilteredData() {
+    const checkedDepartments = Array.from(document.querySelectorAll('#department-filters input[type="checkbox"]:checked'))
+        .map(cb => cb.dataset.value);
+    
+    return data.filter(d => checkedDepartments.includes(d.division));
+}
+
+// Aggregate data by current view
+function aggregateData() {
+    const filteredData = getFilteredData();
+    const groupedData = new Map();
+
+    filteredData.forEach(d => {
+        let groupKey;
+        
+        switch(currentView) {
+            case 'gender':
+                groupKey = d.gender;
+                break;
+            case 'ethnicity':
+                groupKey = d.ethnicity;
+                break;
+            case 'lgbtq':
+                groupKey = d.lgbtq;
+                break;
+            case 'disability':
+                groupKey = d.disability;
+                break;
+            case 'indigenous':
+                groupKey = d.indigenous;
+                break;
+            case 'division':
+                groupKey = d.division;
+                break;
+            default:
+                groupKey = 'Unknown';
+        }
+
+        if (!groupedData.has(groupKey)) {
+            groupedData.set(groupKey, []);
+        }
+        groupedData.get(groupKey).push(d);
+    });
+
+    // Calculate averages and filter by minimum group size
+    const aggregated = [];
+    groupedData.forEach((employees, group) => {
+        if (employees.length >= minGroupSize) {
+            let score;
+            switch(currentScoreType) {
+                case 'diversity':
+                    score = employees.reduce((sum, emp) => sum + emp.diversityAvg, 0) / employees.length;
+                    break;
+                case 'positive':
+                    score = employees.reduce((sum, emp) => sum + emp.diversityPositive, 0) / employees.length;
+                    break;
+                case 'negative':
+                    score = employees.reduce((sum, emp) => sum + emp.diversityNegative, 0) / employees.length;
+                    break;
+                default:
+                    score = 0;
+            }
+            
+            aggregated.push({
+                group: group,
+                score: score,
+                count: employees.length,
+                employees: employees
+            });
+        }
+    });
+
+    // Sort by score descending
+    return aggregated.sort((a, b) => b.score - a.score);
 }
 
 // Create visualization
 function createVisualization() {
-    const svg = d3.select('.heatmap-chart');
+    const aggregatedData = aggregateData();
+    
+    // Clear previous chart
+    const svg = d3.select('.bar-chart');
     svg.selectAll('*').remove();
 
-    const divisions = [...new Set(heatmapData.map(d => d.division))].sort();
-    const metrics = [...new Set(heatmapData.map(d => d.metric))];
+    if (aggregatedData.length === 0) {
+        svg.append('text')
+            .attr('x', width / 2)
+            .attr('y', height / 2)
+            .attr('text-anchor', 'middle')
+            .attr('fill', '#d1d5db')
+            .text('No data available for current filters');
+        return;
+    }
 
-    
+    // Create scales
     const xScale = d3.scaleBand()
-        .domain(divisions)
+        .domain(aggregatedData.map(d => d.group))
         .range([0, width])
-        .padding(0.1);
+        .padding(0.2);
 
-    const yScale = d3.scaleBand()
-        .domain(metrics)
-        .range([0, height])
-        .padding(0.1);
+    const yScale = d3.scaleLinear()
+        .domain([
+            Math.min(0, d3.min(aggregatedData, d => d.score)),
+            d3.max(aggregatedData, d => d.score)
+        ])
+        .range([height, 0]);
 
-    const colorScale = d3.scaleSequential(colorSchemes[currentView])
-        .domain(d3.extent(heatmapData, d => d.value));
+    // Color scale based on score
+    const colorScale = d3.scaleSequential()
+        .domain(d3.extent(aggregatedData, d => d.score))
+        .interpolator(d3.interpolateRdYlGn);
 
-    
+    // Create main group
     const g = svg.append('g')
         .attr('transform', `translate(${margin.left},${margin.top})`);
 
-   
-    const cells = g.selectAll('.heatmap-cell')
-        .data(heatmapData)
+    // Add bars
+    const bars = g.selectAll('.bar')
+        .data(aggregatedData)
         .enter()
         .append('rect')
-        .attr('class', 'heatmap-cell')
-        .attr('x', d => xScale(d.division))
-        .attr('y', d => yScale(d.metric))
+        .attr('class', 'bar')
+        .attr('x', d => xScale(d.group))
+        .attr('y', d => yScale(Math.max(0, d.score)))
         .attr('width', xScale.bandwidth())
-        .attr('height', yScale.bandwidth())
-        .attr('fill', d => colorScale(d.value))
+        .attr('height', d => Math.abs(yScale(d.score) - yScale(0)))
+        .attr('fill', d => colorScale(d.score))
+        .attr('stroke', 'rgba(255, 255, 255, 0.3)')
+        .attr('stroke-width', 1)
         .on('mouseover', function(event, d) {
             showTooltip(event, d);
+            d3.select(this).attr('stroke-width', 2).attr('stroke', '#fff');
         })
-        .on('mouseout', hideTooltip);
+        .on('mouseout', function() {
+            hideTooltip();
+            d3.select(this).attr('stroke-width', 1).attr('stroke', 'rgba(255, 255, 255, 0.3)');
+        });
 
-    
+    // Add score labels on bars
+    g.selectAll('.score-label')
+        .data(aggregatedData)
+        .enter()
+        .append('text')
+        .attr('class', 'score-label')
+        .attr('x', d => xScale(d.group) + xScale.bandwidth() / 2)
+        .attr('y', d => yScale(d.score) - 5)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#f9fafb')
+        .attr('font-size', '11px')
+        .attr('font-weight', '500')
+        .text(d => d.score.toFixed(2));
+
+    // Add X axis
     g.append('g')
-        .attr('class', 'heatmap-axis')
-        .attr('transform', `translate(0,${height})`)
+        .attr('class', 'x-axis')
+        .attr('transform', `translate(0,${yScale(0)})`)
         .call(d3.axisBottom(xScale))
         .selectAll('text')
         .style('text-anchor', 'end')
         .attr('dx', '-.8em')
         .attr('dy', '.15em')
-        .attr('transform', 'rotate(-45)');
+        .attr('transform', 'rotate(-45)')
+        .attr('fill', '#d1d5db')
+        .attr('font-size', '11px');
 
-    
+    // Add Y axis
     g.append('g')
-        .attr('class', 'heatmap-axis')
-        .call(d3.axisLeft(yScale));
+        .attr('class', 'y-axis')
+        .call(d3.axisLeft(yScale).tickFormat(d3.format('.1f')))
+        .selectAll('text')
+        .attr('fill', '#d1d5db')
+        .attr('font-size', '11px');
 
-    
+    // Add axis labels
     g.append('text')
         .attr('class', 'axis-label')
         .attr('transform', 'rotate(-90)')
@@ -227,94 +297,137 @@ function createVisualization() {
         .attr('x', 0 - (height / 2))
         .attr('dy', '1em')
         .style('text-anchor', 'middle')
-        .text('DEI Metrics');
+        .attr('fill', '#f9fafb')
+        .attr('font-size', '12px')
+        .text(getYAxisLabel());
 
     g.append('text')
         .attr('class', 'axis-label')
         .attr('transform', `translate(${width / 2}, ${height + margin.bottom - 10})`)
         .style('text-anchor', 'middle')
-        .text('Divisions');
+        .attr('fill', '#f9fafb')
+        .attr('font-size', '12px')
+        .text(getXAxisLabel());
 
-    
-    updateColorLegend(colorScale);
+    // Add zero line if needed
+    if (yScale.domain()[0] < 0) {
+        g.append('line')
+            .attr('class', 'zero-line')
+            .attr('x1', 0)
+            .attr('x2', width)
+            .attr('y1', yScale(0))
+            .attr('y2', yScale(0))
+            .attr('stroke', 'rgba(255, 255, 255, 0.5)')
+            .attr('stroke-width', 1)
+            .attr('stroke-dasharray', '3,3');
+    }
+
+    // Update insights
+    updateInsights(aggregatedData);
 }
 
 // Update visualization (for filtering)
 function updateVisualization() {
-    createHeatmapData();
-    
-    const svg = d3.select('.heatmap-chart g');
-    const colorScale = d3.scaleSequential(colorSchemes[currentView])
-        .domain(d3.extent(heatmapData, d => d.value));
-
-    svg.selectAll('.heatmap-cell')
-        .data(heatmapData)
-        .transition()
-        .duration(500)
-        .attr('fill', d => colorScale(d.value));
-
-    updateColorLegend(colorScale);
+    createVisualization();
+    updateStats();
 }
 
-// Update color legend
-function updateColorLegend(colorScale) {
-    const legend = d3.select('.color-legend');
-    legend.selectAll('*').remove();
-
-    
-    const defs = d3.select('.heatmap-chart').append('defs');
-    const gradient = defs.append('linearGradient')
-        .attr('id', 'heatmap-gradient');
-
-    const steps = 10;
-    for (let i = 0; i <= steps; i++) {
-        const t = i / steps;
-        gradient.append('stop')
-            .attr('offset', `${t * 100}%`)
-            .attr('stop-color', colorSchemes[currentView](t));
+// Get Y axis label based on score type
+function getYAxisLabel() {
+    switch(currentScoreType) {
+        case 'diversity': return 'Average Diversity Score';
+        case 'positive': return 'Positive Responses Score';
+        case 'negative': return 'Negative Responses Score';
+        default: return 'Score';
     }
+}
 
-   
-    legend.append('div')
-        .attr('class', 'legend-gradient')
-        .style('background', 'linear-gradient(to right, ' + 
-            Array.from({length: 11}, (_, i) => colorSchemes[currentView](i/10)).join(', ') + ')');
-
-    
-    const domain = d3.extent(heatmapData, d => d.value);
-    legend.append('span')
-        .attr('class', 'legend-text')
-        .text(`${domain[0].toFixed(2)}`);
-    
-    legend.append('span')
-        .attr('class', 'legend-text')
-        .text(`${domain[1].toFixed(2)}`);
+// Get X axis label based on current view
+function getXAxisLabel() {
+    switch(currentView) {
+        case 'gender': return 'Gender Groups';
+        case 'ethnicity': return 'Ethnic Groups';
+        case 'lgbtq': return 'LGBTQ+ Status';
+        case 'disability': return 'Disability Status';
+        case 'indigenous': return 'Indigenous Status';
+        case 'division': return 'Departments';
+        default: return 'Groups';
+    }
 }
 
 // Update statistics
 function updateStats() {
-    const divisions = [...new Set(heatmapData.map(d => d.division))];
-    const metrics = [...new Set(heatmapData.map(d => d.metric))];
-    const avgScore = heatmapData.length > 0 ? 
-        heatmapData.reduce((sum, d) => sum + d.value, 0) / heatmapData.length : 0;
+    const aggregatedData = aggregateData();
+    const filteredData = getFilteredData();
+    
+    const avgScore = aggregatedData.length > 0 ? 
+        aggregatedData.reduce((sum, d) => sum + d.score, 0) / aggregatedData.length : 0;
+    const highestScore = aggregatedData.length > 0 ? Math.max(...aggregatedData.map(d => d.score)) : 0;
+    const lowestScore = aggregatedData.length > 0 ? Math.min(...aggregatedData.map(d => d.score)) : 0;
 
-    document.getElementById('dept-count').textContent = divisions.length;
-    document.getElementById('metric-count').textContent = metrics.length;
+    document.getElementById('group-count').textContent = aggregatedData.length;
+    document.getElementById('employee-count').textContent = filteredData.length;
     document.getElementById('avg-score').textContent = avgScore.toFixed(2);
+    document.getElementById('highest-score').textContent = highestScore.toFixed(2);
+    document.getElementById('lowest-score').textContent = lowestScore.toFixed(2);
     
+    // Update progress bar (normalize score to 0-100%)
+    const normalizedScore = currentScoreType === 'negative' 
+        ? Math.max(0, (Math.abs(avgScore) / 2) * 100)
+        : Math.max(0, ((avgScore + 2) / 4) * 100);
+    document.getElementById('progress-fill').style.width = `${Math.min(100, normalizedScore)}%`;
+}
+
+// Update insights panel
+function updateInsights(aggregatedData) {
+    const insightsContent = document.getElementById('insights-content');
     
-    const normalizedScore = (avgScore + 2) / 4 * 100; 
-    document.getElementById('progress-fill').style.width = `${Math.max(0, Math.min(100, normalizedScore))}%`;
+    if (aggregatedData.length === 0) {
+        insightsContent.innerHTML = '<p>No data available for current filters.</p>';
+        return;
+    }
+
+    const highest = aggregatedData[0];
+    const lowest = aggregatedData[aggregatedData.length - 1];
+    const avgScore = aggregatedData.reduce((sum, d) => sum + d.score, 0) / aggregatedData.length;
+
+    let insights = `
+        <div class="insight-item">
+            <strong>Highest Score:</strong> ${highest.group} (${highest.score.toFixed(2)}, n=${highest.count})
+        </div>
+        <div class="insight-item">
+            <strong>Lowest Score:</strong> ${lowest.group} (${lowest.score.toFixed(2)}, n=${lowest.count})
+        </div>
+        <div class="insight-item">
+            <strong>Score Gap:</strong> ${(highest.score - lowest.score).toFixed(2)} points
+        </div>
+        <div class="insight-item">
+            <strong>Overall Average:</strong> ${avgScore.toFixed(2)}
+        </div>
+    `;
+
+    // Add specific insights based on current view
+    if (currentView === 'gender' && aggregatedData.length >= 2) {
+        insights += '<div class="insight-item"><strong>Gender Analysis:</strong> ';
+        if (highest.score - lowest.score > 0.5) {
+            insights += 'Significant differences in diversity perception between genders.';
+        } else {
+            insights += 'Relatively similar diversity perception across genders.';
+        }
+        insights += '</div>';
+    }
+
+    insightsContent.innerHTML = insights;
 }
 
 // Tooltip functions
 function showTooltip(event, d) {
     const tooltip = document.getElementById('tooltip');
     tooltip.innerHTML = `
-        <strong>${d.division}</strong><br>
-        Metric: ${d.metric}<br>
-        Score: ${d.value.toFixed(3)}<br>
-        Employees: ${d.count}
+        <strong>${d.group}</strong><br>
+        Score: ${d.score.toFixed(3)}<br>
+        Employees: ${d.count}<br>
+        Score Type: ${getYAxisLabel()}
     `;
     tooltip.style.opacity = 1;
     tooltip.style.left = (event.pageX + 10) + 'px';
