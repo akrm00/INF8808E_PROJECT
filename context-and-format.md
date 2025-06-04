@@ -55,13 +55,13 @@ Strongly Agree : 2
 10 Are there gaps in equity perception among disabled individuals, minorities, or non-veterans? ☆☆
 11 Does perceived equity vary by division or manager? ☆
 
-**Do all employees feel included on a daily basis? (Visualization 3)**
+**Do all employees feel included on a daily basis? (Visualization 4)**
 
 12 Do LGBTQ+ individuals feel included? ☆☆☆
 13 Which groups show high I_Negative inclusion scores? ☆☆
 14 Does perceived inclusion vary by pronouns used or cultural background?☆
 
-**What actions can improve DEI in the company? (Visualization 4)**
+**What actions can improve DEI in the company? (Visualization 5)**
 
 15 Which groups experience multiple layers of marginalization (e.g., minority + LGBTQ + disability)? ☆☆☆
 16 Which departments perform well despite high diversity? ☆☆
