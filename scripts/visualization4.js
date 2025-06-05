@@ -1,6 +1,6 @@
 const margin = { top: 40, right: 60, bottom: 150, left: 100 };
-const width = 700 - margin.left - margin.right;
-const height = 550 - margin.top - margin.bottom;
+const width = 900 - margin.left - margin.right;
+const height = 650 - margin.top - margin.bottom;
 
 let data = [];
 let filteredData = [];
@@ -77,7 +77,6 @@ async function loadData() {
         filterData();
         createVisualization();
         updateStats();
-        updateInsights();
     } catch (error) {
         console.error('Error loading data:', error);
     }
@@ -97,7 +96,6 @@ function setupEventListeners() {
             this.classList.add('active');
             currentDimension = this.dataset.dimension;
             createVisualization();
-            updateInsights();
         });
     });
 
@@ -105,7 +103,6 @@ function setupEventListeners() {
     document.getElementById('score-type').addEventListener('change', function() {
         currentScoreType = this.value;
         createVisualization();
-        updateInsights();
     });
 
     // Control buttons - Sort only
@@ -182,6 +179,9 @@ function createVisualization() {
     const groupedData = groupDataByDimension();
     
     if (groupedData.length === 0) return;
+
+    // Update color legend
+    updateColorLegend(groupedData);
 
     // Sort groups if requested
     if (sortByScore) {
@@ -368,12 +368,10 @@ function createVisualization() {
 
     // Rotate x-axis labels if needed
     xAxis.selectAll('text')
-        .style('text-anchor', 'end')
-        .attr('dx', '-2em')
+        .style('text-anchor', 'middle')
         .attr('dy', '4em')
-        .attr('transform', 'rotate(-45)')
         .attr('fill', '#fff')
-        .attr('font-size', '12px');
+        .attr('font-size', '16px');
 
     const yAxis = mainGroup.append('g')
         .attr('class', 'y-axis')
@@ -508,74 +506,53 @@ function updateStats() {
     }
 }
 
-function updateInsights() {
-    const insightsContent = document.getElementById('insights-content');
-    const groupedData = groupDataByDimension();
+function updateColorLegend(groupedData) {
+    const legendContainer = document.getElementById('color-legend');
+    legendContainer.innerHTML = '';
     
-    if (groupedData.length === 0) {
-        insightsContent.innerHTML = '<p>No sufficient data for current filters.</p>';
-        return;
-    }
-
-    const groupStats = groupedData.map(group => ({
-        name: group.key,
-        mean: d3.mean(group.values, d => d[currentScoreType]),
-        median: d3.quantile(group.values.map(d => d[currentScoreType]).sort(d3.ascending), 0.5),
-        count: group.values.length,
-        values: group.values
-    })).sort((a, b) => b.mean - a.mean);
-
-    const highest = groupStats[0];
-    const lowest = groupStats[groupStats.length - 1];
-    const gap = highest.mean - lowest.mean;
-
-    let insights = `
-        <div class="insight-item">
-            <strong>Highest ${getScoreLabel(currentScoreType)}:</strong><br>
-            ${highest.name} (Mean: ${highest.mean.toFixed(3)}, n=${highest.count})
-        </div>
-        <div class="insight-item">
-            <strong>Lowest ${getScoreLabel(currentScoreType)}:</strong><br>
-            ${lowest.name} (Mean: ${lowest.mean.toFixed(3)}, n=${lowest.count})
-        </div>
-        <div class="insight-item">
-            <strong>Mean Difference:</strong> ${gap.toFixed(3)} points
-        </div>
-    `;
-
-    // Add dimension-specific insights
-    if (currentDimension === 'lgbtq') {
-        const lgbtqYes = groupStats.find(g => g.name === 'Yes');
-        const lgbtqNo = groupStats.find(g => g.name === 'No');
+    // Get unique groups and their colors
+    const uniqueGroups = [...new Set(groupedData.map(d => d.key))].slice(0, 4); // Limit to 4 items for space
+    
+    uniqueGroups.forEach(groupKey => {
+        const legendItem = document.createElement('div');
+        legendItem.className = 'legend-item';
         
-        if (lgbtqYes && lgbtqNo) {
-            const difference = lgbtqNo.mean - lgbtqYes.mean;
-            const significant = Math.abs(difference) > 0.1;
-            insights += `
-                <div class="insight-item">
-                    <strong>LGBTQ+ Analysis:</strong><br>
-                    ${difference > 0 ? 'Non-LGBTQ+ employees' : 'LGBTQ+ employees'} score ${Math.abs(difference).toFixed(3)} points higher on average.
-                    ${significant ? ' <span style="color: #ff6b6b;">Significant difference!</span>' : ''}
-                </div>
-            `;
+        const colorBox = document.createElement('div');
+        colorBox.className = 'legend-color';
+        
+        let color = getGroupColor(groupKey);
+        if (colorByScore) {
+            const groupMean = d3.mean(groupedData.find(g => g.key === groupKey)?.values || [], d => d[currentScoreType]);
+            color = getScoreColor(groupMean);
         }
-    } else if (currentDimension === 'pronouns') {
-        insights += `
-            <div class="insight-item">
-                <strong>Pronouns Analysis:</strong><br>
-                ${groupStats.length} different pronoun groups detected. 
-                ${gap > 0.2 ? 'Large variation in inclusion scores across pronoun preferences.' : 'Relatively consistent scores across pronoun groups.'}
-            </div>
-        `;
-    } else if (currentDimension === 'ethnicity') {
-        insights += `
-            <div class="insight-item">
-                <strong>Cultural Background Analysis:</strong><br>
-                ${groupStats.length} cultural groups represented. 
-                ${gap > 0.2 ? 'Notable differences in inclusion scores across cultural backgrounds.' : 'Fairly consistent inclusion scores across cultural groups.'}
-            </div>
-        `;
+        if (highlightLGBTQ && currentDimension === 'lgbtq' && groupKey === 'Yes') {
+            color = '#ff4757';
+        }
+        if (highlightLowScores) {
+            const groupMeans = groupedData.map(g => d3.mean(g.values, d => d[currentScoreType]));
+            const groupMean = d3.mean(groupedData.find(g => g.key === groupKey)?.values || [], d => d[currentScoreType]);
+            if (groupMean < d3.quantile(groupMeans, 0.25)) {
+                color = '#ff4757';
+            }
+        }
+        
+        colorBox.style.backgroundColor = color;
+        
+        const label = document.createElement('span');
+        label.className = 'legend-label';
+        label.textContent = groupKey.length > 8 ? groupKey.substring(0, 8) + '...' : groupKey;
+        
+        legendItem.appendChild(colorBox);
+        legendItem.appendChild(label);
+        legendContainer.appendChild(legendItem);
+    });
+    
+    // Add "..." if there are more groups
+    if (groupedData.length > 4) {
+        const moreItem = document.createElement('span');
+        moreItem.className = 'legend-label';
+        moreItem.textContent = `+${groupedData.length - 4} more`;
+        moreItem.style.fontStyle = 'italic';
+        legendContainer.appendChild(moreItem);
     }
-
-    insightsContent.innerHTML = insights;
 } 

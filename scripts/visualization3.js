@@ -1,7 +1,7 @@
 // Configuration for Equity Hot Spots Heatmap
 const margin = { top: 60, right: 40, bottom: 120, left: 150 };
-const width = 800 - margin.left - margin.right;
-const height = 500 - margin.top - margin.bottom;
+const width = 1000 - margin.left - margin.right;
+const height = 600 - margin.top - margin.bottom;
 
 // Global variables
 let data = [];
@@ -303,25 +303,35 @@ function createVisualization() {
     }
 
     // Add axes
-    g.append('g')
+    const xAxis = g.append('g')
         .attr('class', 'chart-axis')
         .attr('transform', `translate(0,${height})`)
-        .call(d3.axisBottom(xScale))
-        .selectAll('text')
-        .style('text-anchor', 'end')
-        .attr('dx', '-.8em')
-        .attr('dy', '.15em')
-        .attr('transform', 'rotate(-45)')
-        .attr('fill', '#d1d5db');
+        .call(d3.axisBottom(xScale));
+    
+    // Conditionally style text labels based on current view
+    if (currentView === 'demographics') {
+        // Keep angled labels for demographics
+        xAxis.selectAll('text')
+            .style('text-anchor', 'end')
+            .attr('dx', '-.8em')
+            .attr('dy', '.15em')
+            .attr('transform', 'rotate(-45)')
+            .attr('fill', '#d1d5db');
+    } else {
+        // Horizontal labels for divisions and managers
+        xAxis.selectAll('text')
+            .style('text-anchor', 'middle')
+            .attr('dx', '0')
+            .attr('dy', '1em')
+            .attr('transform', 'rotate(0)')
+            .attr('fill', '#d1d5db');
+    }
 
     g.append('g')
         .attr('class', 'chart-axis')
         .call(d3.axisLeft(yScale))
         .selectAll('text')
         .attr('fill', '#d1d5db');
-
-    // Update color scale legend
-    updateColorScale(colorScale, values);
 
     // Add axis labels
     g.append('text')
@@ -341,45 +351,105 @@ function createVisualization() {
         .attr('fill', '#f9fafb')
         .text(currentView === 'demographics' ? 'Categories' : 
               currentView === 'divisions' ? 'Divisions' : 'Managers');
+
+    // Add color legend in top right
+    const legendWidth = 200;
+    const legendHeight = 15;
+    const legendX = width - legendWidth - 10;
+    const legendY = -40;
+    
+    // Create gradient definition
+    const defs = svg.select('defs').empty() ? svg.append('defs') : svg.select('defs');
+    const gradient = defs.select('#heatmap-gradient').empty() ? 
+        defs.append('linearGradient').attr('id', 'heatmap-gradient') : 
+        defs.select('#heatmap-gradient');
+    
+    gradient.attr('x1', '0%').attr('y1', '0%').attr('x2', '100%').attr('y2', '0%');
+    
+    // Clear existing stops
+    gradient.selectAll('stop').remove();
+    
+    // Add color stops based on current metric
+    const steps = 20;
+    const minValue = d3.min(values);
+    const maxValue = d3.max(values);
+    
+    for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const value = minValue + t * (maxValue - minValue);
+        gradient.append('stop')
+            .attr('offset', `${t * 100}%`)
+            .attr('stop-color', colorScale(value));
+    }
+    
+    // Add legend group
+    const legendGroup = g.append('g')
+        .attr('class', 'color-legend')
+        .attr('transform', `translate(${legendX}, ${legendY})`);
+    
+    // Add legend rectangle
+    legendGroup.append('rect')
+        .attr('width', legendWidth)
+        .attr('height', legendHeight)
+        .style('fill', 'url(#heatmap-gradient)')
+        .style('stroke', 'rgba(255, 255, 255, 0.4)')
+        .style('stroke-width', 1)
+        .style('rx', 3);
+    
+    // Add legend title
+    legendGroup.append('text')
+        .attr('x', legendWidth / 2)
+        .attr('y', -8)
+        .style('text-anchor', 'middle')
+        .style('fill', '#f9fafb')
+        .style('font-size', '12px')
+        .style('font-weight', '500')
+        .text(currentMetric === 'negative' ? 'Worse Equity' : 
+              currentMetric === 'positive' ? 'Better Equity' : 'Equity Balance');
+    
+    // Add min/max labels
+    legendGroup.append('text')
+        .attr('x', 0)
+        .attr('y', legendHeight + 15)
+        .style('text-anchor', 'start')
+        .style('fill', '#d1d5db')
+        .style('font-size', '10px')
+        .text(minValue.toFixed(2));
+    
+    legendGroup.append('text')
+        .attr('x', legendWidth)
+        .attr('y', legendHeight + 15)
+        .style('text-anchor', 'end')
+        .style('fill', '#d1d5db')
+        .style('font-size', '10px')
+        .text(maxValue.toFixed(2));
+    
+    // Add arrow indicators
+    if (currentMetric === 'negative') {
+        legendGroup.append('text')
+            .attr('x', legendWidth + 10)
+            .attr('y', legendHeight / 2)
+            .style('text-anchor', 'start')
+            .style('fill', '#ff6b6b')
+            .style('font-size', '14px')
+            .style('dominant-baseline', 'middle')
+            .text('→ Problematic');
+    } else if (currentMetric === 'positive') {
+        legendGroup.append('text')
+            .attr('x', legendWidth + 10)
+            .attr('y', legendHeight / 2)
+            .style('text-anchor', 'start')
+            .style('fill', '#4ecdc4')
+            .style('font-size', '14px')
+            .style('dominant-baseline', 'middle')
+            .text('→ Good');
+    }
 }
 
 // Update visualization
 function updateVisualization() {
     createHeatmapData();
     createVisualization();
-}
-
-// Update color scale legend
-function updateColorScale(colorScale, values) {
-    const gradient = d3.select('.color-gradient');
-    gradient.selectAll('*').remove();
-    
-    const gradientSvg = gradient.append('svg')
-        .attr('width', 200)
-        .attr('height', 20);
-    
-    const defs = gradientSvg.append('defs');
-    const linearGradient = defs.append('linearGradient')
-        .attr('id', 'color-scale-gradient')
-        .attr('x1', '0%')
-        .attr('x2', '100%');
-    
-    const steps = 10;
-    for (let i = 0; i <= steps; i++) {
-        const t = i / steps;
-        const value = d3.min(values) + t * (d3.max(values) - d3.min(values));
-        linearGradient.append('stop')
-            .attr('offset', `${t * 100}%`)
-            .attr('stop-color', colorScale(value));
-    }
-    
-    gradientSvg.append('rect')
-        .attr('width', 200)
-        .attr('height', 20)
-        .style('fill', 'url(#color-scale-gradient)');
-    
-    document.getElementById('scale-min').textContent = d3.min(values).toFixed(2);
-    document.getElementById('scale-max').textContent = d3.max(values).toFixed(2);
 }
 
 // Update statistics

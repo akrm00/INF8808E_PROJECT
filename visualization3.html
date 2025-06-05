@@ -34,13 +34,34 @@
 
     <!-- Main Content -->
     <main class="viz-content">
-        <div class="questions-panel">
+        <div class="main-viz">
+            <div class="view-controls">
+                <div class="view-tabs">
+                    <button class="tab-btn active" data-view="demographics">By Demographics</button>
+                    <button class="tab-btn" data-view="divisions">By Division</button>
+                    <button class="tab-btn" data-view="managers">By Manager</button>
+                </div>
+
+                <div class="heatmap-controls">
+                    <div class="metric-selector">
+                        <label for="equity-metric">Equity Metric:</label>
+                        <select id="equity-metric">
+                            <option value="negative">E_Negative Scores (Higher = Worse Equity)</option>
+                            <option value="positive">E_Positive Scores (Higher = Better Equity)</option>
+                            <option value="gap">Equity Gap (Positive - Negative)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="heatmap-container">
+                <svg class="heatmap" width="1000" height="600"></svg>
+            </div>
+        </div>
+
+        <div class="controls-panel">
             <div class="stats-panel">
                 <h3>Hot Spots Analysis</h3>
-                <div class="critical-insights">
-                    <h4>Most Critical Groups:</h4>
-                    <div id="critical-list"></div>
-                </div>
                 <div class="stat-item">
                     <span>Current View:</span>
                     <span id="current-view">Demographics</span>
@@ -61,40 +82,7 @@
                     <div class="progress-fill" id="progress-fill"></div>
                 </div>
             </div>
-        </div>
 
-        <div class="main-viz">
-            <div class="view-tabs">
-                <button class="tab-btn active" data-view="demographics">By Demographics</button>
-                <button class="tab-btn" data-view="divisions">By Division</button>
-                <button class="tab-btn" data-view="managers">By Manager</button>
-            </div>
-
-            <div class="heatmap-controls">
-                <div class="metric-selector">
-                    <label for="equity-metric">Equity Metric:</label>
-                    <select id="equity-metric">
-                        <option value="negative">E_Negative Scores (Higher = Worse Equity)</option>
-                        <option value="positive">E_Positive Scores (Higher = Better Equity)</option>
-                        <option value="gap">Equity Gap (Positive - Negative)</option>
-                    </select>
-                </div>
-                <div class="color-scale-legend">
-                    <span class="legend-title">Color Scale:</span>
-                    <div class="color-gradient"></div>
-                    <div class="scale-labels">
-                        <span id="scale-min">0</span>
-                        <span id="scale-max">2</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="heatmap-container">
-                <svg class="heatmap" width="800" height="500"></svg>
-            </div>
-        </div>
-
-        <div class="controls-panel">
             <div class="filters-section">
                 <h3>Filters</h3>
                 

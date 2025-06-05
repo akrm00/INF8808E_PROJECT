@@ -1,7 +1,7 @@
 // Configuration for Bar Chart Visualization
 const margin = { top: 50, right: 50, bottom: 100, left: 80 };
-const width = 800 - margin.left - margin.right;
-const height = 500 - margin.top - margin.bottom;
+const width = 1000 - margin.left - margin.right;
+const height = 600 - margin.top - margin.bottom;
 
 // Global variables
 let data = [];
@@ -263,12 +263,11 @@ function createVisualization() {
         .attr('transform', `translate(0,${yScale(0)})`)
         .call(d3.axisBottom(xScale))
         .selectAll('text')
-        .style('text-anchor', 'end')
-        .attr('dx', '-.8em')
-        .attr('dy', '.15em')
-        .attr('transform', 'rotate(-45)')
-        .attr('fill', '#d1d5db')
-        .attr('font-size', '11px');
+        .style('text-anchor', 'middle')
+        .attr('dy', '1em')
+        .style('fill', '#f9fafb')
+        .style('font-size', '13px')
+        .style('font-weight', '500');
 
     // Add Y axis
     g.append('g')
@@ -276,7 +275,7 @@ function createVisualization() {
         .call(d3.axisLeft(yScale).tickFormat(d3.format('.1f')))
         .selectAll('text')
         .attr('fill', '#d1d5db')
-        .attr('font-size', '11px');
+        .attr('font-size', '13px');
 
     // Add axis labels
     g.append('text')
@@ -287,7 +286,7 @@ function createVisualization() {
         .attr('dy', '1em')
         .style('text-anchor', 'middle')
         .attr('fill', '#f9fafb')
-        .attr('font-size', '12px')
+        .attr('font-size', '14px')
         .text(getYAxisLabel());
 
     g.append('text')
@@ -295,7 +294,7 @@ function createVisualization() {
         .attr('transform', `translate(${width / 2}, ${height + margin.bottom - 10})`)
         .style('text-anchor', 'middle')
         .attr('fill', '#f9fafb')
-        .attr('font-size', '12px')
+        .attr('font-size', '14px')
         .text(getXAxisLabel());
 
     // Add zero line if needed
@@ -310,6 +309,63 @@ function createVisualization() {
             .attr('stroke-width', 1)
             .attr('stroke-dasharray', '3,3');
     }
+
+    // Add color legend
+    const legendWidth = 150;
+    const legendHeight = 15;
+    const legendX = width - legendWidth - 10;
+    const legendY = -35;
+    
+    // Create gradient
+    const defs = svg.select('defs').empty() ? svg.append('defs') : svg.select('defs');
+    const gradient = defs.select('#legend-gradient').empty() ? 
+        defs.append('linearGradient').attr('id', 'legend-gradient') : 
+        defs.select('#legend-gradient');
+    
+    gradient.attr('x1', '0%').attr('y1', '0%').attr('x2', '100%').attr('y2', '0%');
+    
+    // Clear existing stops
+    gradient.selectAll('stop').remove();
+    
+    // Add color stops
+    const steps = 10;
+    for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const score = colorScale.domain()[0] + t * (colorScale.domain()[1] - colorScale.domain()[0]);
+        gradient.append('stop')
+            .attr('offset', `${t * 100}%`)
+            .attr('stop-color', colorScale(score));
+    }
+    
+    // Add legend rectangle
+    g.append('rect')
+        .attr('class', 'legend-rect')
+        .attr('x', legendX)
+        .attr('y', legendY)
+        .attr('width', legendWidth)
+        .attr('height', legendHeight)
+        .style('fill', 'url(#legend-gradient)')
+        .style('stroke', 'rgba(255, 255, 255, 0.3)')
+        .style('stroke-width', 1);
+    
+    // Add legend labels
+    g.append('text')
+        .attr('class', 'legend-label')
+        .attr('x', legendX)
+        .attr('y', legendY - 5)
+        .style('text-anchor', 'start')
+        .style('fill', '#f9fafb')
+        .style('font-size', '11px')
+        .text('Lower Score');
+    
+    g.append('text')
+        .attr('class', 'legend-label')
+        .attr('x', legendX + legendWidth)
+        .attr('y', legendY - 5)
+        .style('text-anchor', 'end')
+        .style('fill', '#f9fafb')
+        .style('font-size', '11px')
+        .text('Higher Score');
 
     // Update insights
     updateInsights(aggregatedData);

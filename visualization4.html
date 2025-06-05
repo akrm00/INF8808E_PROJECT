@@ -34,13 +34,6 @@
 
     <!-- Main Content -->
     <main class="viz-content">
-        <div class="insights-panel">
-            <h3>Key Insights</h3>
-            <div id="insights-content">
-                <p>Select a dimension to see key insights about inclusion patterns.</p>
-            </div>
-        </div>
-
         <div class="main-viz">
             <div class="view-controls">
                 <div class="control-row">
@@ -61,10 +54,16 @@
                         </select>
                     </div>
                 </div>
+                
+                <div class="legend-row">
+                    <div class="color-legend" id="color-legend">
+                        <!-- Dynamic legend will be populated by JavaScript -->
+                    </div>
+                </div>
             </div>
 
             <div class="boxplot-container">
-                <svg class="boxplot-chart" width="700" height="550"></svg>
+                <svg class="boxplot-chart" width="900" height="650"></svg>
             </div>
         </div>
 

@@ -63,48 +63,8 @@
     margin: 0 auto;
     padding: 2rem;
     display: grid;
-    grid-template-columns: 350px 1fr 300px;
+    grid-template-columns: 1fr 300px;
     gap: 2rem;
-}
-
-.questions-panel {
-    backdrop-filter: blur(20px);
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    padding: 2rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    height: 770px;
-}
-
-.questions-panel h3 {
-    color: #f9fafb;
-    font-size: 1.1rem;
-    margin-bottom: 1.5rem;
-    font-weight: 600;
-    text-align: center;
-}
-
-.question-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.question-item {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 12px;
-    padding: 1rem;
-    color: #d1d5db;
-    font-size: 0.85rem;
-    line-height: 1.4;
-}
-
-.question-item strong {
-    color: #f9fafb;
-    display: block;
-    margin-bottom: 0.5rem;
 }
 
 .main-viz {
@@ -147,11 +107,26 @@
     background: rgba(255, 255, 255, 0.5);
 }
 
+/* View Controls Container */
+.view-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 2rem;
+}
+
 /* View Tabs */
 .view-tabs {
     display: flex;
     gap: 0.5rem;
-    margin-bottom: 1.5rem;
+}
+
+/* Heatmap Controls */
+.heatmap-controls {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
 }
 
 .tab-btn {
@@ -180,12 +155,8 @@
 /* Heatmap Controls */
 .heatmap-controls {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
-    padding: 1rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
+    gap: 2rem;
 }
 
 .metric-selector {
@@ -270,8 +241,8 @@
 }
 
 .chart-axis text {
-    fill: #d1d5db;
-    font-size: 11px;
+    fill: #ebedf1;
+    font-size: 14px;
     font-family: 'Inter', sans-serif;
 }
 
@@ -285,7 +256,7 @@
 
 .axis-label {
     fill: #f9fafb;
-    font-size: 12px;
+    font-size: 17px;
     font-weight: 500;
     font-family: 'Inter', sans-serif;
 }
@@ -421,11 +392,6 @@ input[type="range"] {
 @media (max-width: 1200px) {
     .viz-content {
         grid-template-columns: 1fr;
-    }
-    
-    .questions-panel {
-        order: -1;
-        height: auto;
     }
     
     .controls-panel {

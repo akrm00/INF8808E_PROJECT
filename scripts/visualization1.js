@@ -1,7 +1,7 @@
 // Configuration
-const margin = { top: 40, right: 80, bottom: 80, left: 80 };
-const width = 800 - margin.left - margin.right;
-const height = 500 - margin.top - margin.bottom;
+const margin = { top: 60, right: 100, bottom: 120, left: 100 };
+const width = 1000 - margin.left - margin.right;
+const height = 600 - margin.top - margin.bottom;
 
 // Color schemes for different metrics
 const colorSchemes = {
@@ -208,6 +208,14 @@ function getDimensionValue(d, dimension) {
     return mapping[dimension];
 }
 
+// Get shortened label for chart display only
+function getShortLabel(value) {
+    if (value === 'Non-binary/non-conforming') {
+        return 'Non-b/Non-c';
+    }
+    return value;
+}
+
 // Update visualization based on current view
 function updateVisualization() {
     const svg = d3.select('.main-chart');
@@ -245,8 +253,14 @@ function drawDemographicsOverview(g) {
     const data = Object.entries(counts).map(([key, value]) => ({ key, value }));
     data.sort((a, b) => b.value - a.value);
 
+    // Create a mapping for short labels for x-axis display
+    const dataWithShortLabels = data.map(d => ({
+        ...d,
+        shortLabel: getShortLabel(d.key)
+    }));
+
     const xScale = d3.scaleBand()
-        .domain(data.map(d => d.key))
+        .domain(dataWithShortLabels.map(d => d.shortLabel))
         .range([0, width])
         .padding(0.4);
 
@@ -260,11 +274,11 @@ function drawDemographicsOverview(g) {
 
     // Bars
     g.selectAll('.bar')
-        .data(data)
+        .data(dataWithShortLabels)
         .enter()
         .append('rect')
         .attr('class', 'bar')
-        .attr('x', d => xScale(d.key))
+        .attr('x', d => xScale(d.shortLabel))
         .attr('y', d => yScale(d.value))
         .attr('width', xScale.bandwidth())
         .attr('height', d => height - yScale(d.value))
@@ -281,15 +295,16 @@ function drawDemographicsOverview(g) {
 
     // Labels on bars
     g.selectAll('.bar-label')
-        .data(data)
+        .data(dataWithShortLabels)
         .enter()
         .append('text')
         .attr('class', 'bar-label')
-        .attr('x', d => xScale(d.key) + xScale.bandwidth() / 2)
-        .attr('y', d => yScale(d.value) - 5)
+        .attr('x', d => xScale(d.shortLabel) + xScale.bandwidth() / 2)
+        .attr('y', d => yScale(d.value) - 8)
         .attr('text-anchor', 'middle')
         .style('fill', '#f9fafb')
-        .style('font-size', '12px')
+        .style('font-size', '14px')
+        .style('font-weight', '600')
         .text(d => d.value);
 
     // Axes
@@ -298,17 +313,17 @@ function drawDemographicsOverview(g) {
         .call(d3.axisBottom(xScale))
         .selectAll('text')
         .style('fill', '#eaeef3')
-        .style('font-size', '11px')
-        .style('text-anchor', 'end')
-        .attr('dx', '-.8em')
-        .attr('dy', '.15em')
-        .attr('transform', 'rotate(-35)');
+        .style('font-size', '16px')
+        .style('font-weight', '500')
+        .style('text-anchor', 'middle')
+        .attr('dy', '1.2em');
 
     g.append('g')
         .call(d3.axisLeft(yScale))
         .selectAll('text')
         .style('fill', '#eaeef3')
-        .style('font-size', '12px');
+        .style('font-size', '16px')
+        .style('font-weight', '500');
 
     // Axis labels
     g.append('text')
@@ -318,27 +333,29 @@ function drawDemographicsOverview(g) {
         .attr('dy', '1em')
         .style('text-anchor', 'middle')
         .style('fill', '#eaeef3')
-        .style('font-size', '11px')
+        .style('font-size', '16px')
+        .style('font-weight', '600')
         .text('Number of Employees');
 
     g.append('text')
-        .attr('transform', `translate(${width / 2}, ${height + margin.bottom + 5})`)
+        .attr('transform', `translate(${width / 2}, ${height + margin.bottom - 20})`)
         .style('text-anchor', 'middle')
         .style('fill', '#eaeef3')
-        .style('font-size', '11px')
+        .style('font-size', '16px')
+        .style('font-weight', '600')
         .text(currentMetric);
 
     // Title
     g.append('text')
         .attr('x', width / 2)
-        .attr('y', -20)
+        .attr('y', -30)
         .attr('text-anchor', 'middle')
         .style('fill', '#f9fafb')
-        .style('font-size', '16px')
+        .style('font-size', '20px')
         .style('font-weight', 'bold')
         .text(`Distribution by ${currentMetric}`);
 
-    // Pass sorted values to legend so legend order matches chart order
+    // Pass original values to legend so legend order matches chart order but keeps full names
     const sortedMetricValues = data.map(d => d.key);
     updateLegend(sortedMetricValues, colorScale);
 }
@@ -418,17 +435,17 @@ function drawByDivision(g) {
         .call(d3.axisBottom(x0Scale))
         .selectAll('text')
         .style('fill', '#eaeef3')
-        .style('font-size', '12px')
-        .style('text-anchor', 'end')
-        .attr('dx', '-.8em')
-        .attr('dy', '.15em')
-        .attr('transform', 'rotate(-45)');
+        .style('font-size', '16px')
+        .style('font-weight', '500')
+        .style('text-anchor', 'middle')
+        .attr('dy', '1.2em');
 
     g.append('g')
         .call(d3.axisLeft(yScale))
         .selectAll('text')
         .style('fill', '#eaeef3')
-        .style('font-size', '12px');
+        .style('font-size', '16px')
+        .style('font-weight', '500');
 
     // Axis labels
     g.append('text')
@@ -438,23 +455,25 @@ function drawByDivision(g) {
         .attr('dy', '1em')
         .style('text-anchor', 'middle')
         .style('fill', '#eaeef3')
-        .style('font-size', '11px')
+        .style('font-size', '16px')
+        .style('font-weight', '600')
         .text('Number of Employees');
 
     g.append('text')
-        .attr('transform', `translate(${width / 2}, ${height + margin.bottom + 5})`)
+        .attr('transform', `translate(${width / 2}, ${height + margin.bottom - 20})`)
         .style('text-anchor', 'middle')
         .style('fill', '#eaeef3')
-        .style('font-size', '11px')
+        .style('font-size', '16px')
+        .style('font-weight', '600')
         .text('Division');
 
     // Title
     g.append('text')
         .attr('x', width / 2)
-        .attr('y', -20)
+        .attr('y', -30)
         .attr('text-anchor', 'middle')
         .style('fill', '#f9fafb')
-        .style('font-size', '16px')
+        .style('font-size', '20px')
         .style('font-weight', 'bold')
         .text(`${currentMetric} Distribution by Division`);
 
@@ -536,13 +555,17 @@ function drawByAgeGroup(g) {
         .call(d3.axisBottom(x0Scale))
         .selectAll('text')
         .style('fill', '#eaeef3')
-        .style('font-size', '12px');
+        .style('font-size', '16px')
+        .style('font-weight', '500')
+        .style('text-anchor', 'middle')
+        .attr('dy', '1.2em');
 
     g.append('g')
         .call(d3.axisLeft(yScale))
         .selectAll('text')
         .style('fill', '#eaeef3')
-        .style('font-size', '12px');
+        .style('font-size', '16px')
+        .style('font-weight', '500');
 
     // Axis labels
     g.append('text')
@@ -552,23 +575,25 @@ function drawByAgeGroup(g) {
         .attr('dy', '1em')
         .style('text-anchor', 'middle')
         .style('fill', '#eaeef3')
-        .style('font-size', '11px')
+        .style('font-size', '16px')
+        .style('font-weight', '600')
         .text('Number of Employees');
 
     g.append('text')
-        .attr('transform', `translate(${width / 2}, ${height + margin.bottom + 5})`)
+        .attr('transform', `translate(${width / 2}, ${height + margin.bottom - 20})`)
         .style('text-anchor', 'middle')
         .style('fill', '#eaeef3')
-        .style('font-size', '11px')
+        .style('font-size', '16px')
+        .style('font-weight', '600')
         .text('Age Group');
 
     // Title
     g.append('text')
         .attr('x', width / 2)
-        .attr('y', -20)
+        .attr('y', -30)
         .attr('text-anchor', 'middle')
         .style('fill', '#f9fafb')
-        .style('font-size', '16px')
+        .style('font-size', '20px')
         .style('font-weight', 'bold')
         .text(`${currentMetric} Distribution by Age Group`);
 
@@ -646,10 +671,11 @@ function drawDiversityIndex(g) {
         .append('text')
         .attr('class', 'bar-label')
         .attr('x', d => xScale(d.division) + xScale.bandwidth() / 2)
-        .attr('y', d => yScale(d.diversityScore) - 5)
+        .attr('y', d => yScale(d.diversityScore) - 8)
         .attr('text-anchor', 'middle')
         .style('fill', '#f9fafb')
-        .style('font-size', '12px')
+        .style('font-size', '14px')
+        .style('font-weight', '600')
         .text(d => d.diversityScore.toFixed(1) + '%');
 
     // Axes
@@ -658,17 +684,17 @@ function drawDiversityIndex(g) {
         .call(d3.axisBottom(xScale))
         .selectAll('text')
         .style('fill', '#eaeef3')
-        .style('font-size', '12px')
-        .style('text-anchor', 'end')
-        .attr('dx', '-.8em')
-        .attr('dy', '.15em')
-        .attr('transform', 'rotate(-45)');
+        .style('font-size', '16px')
+        .style('font-weight', '500')
+        .style('text-anchor', 'middle')
+        .attr('dy', '1.2em');
 
     g.append('g')
         .call(d3.axisLeft(yScale))
         .selectAll('text')
         .style('fill', '#eaeef3')
-        .style('font-size', '12px');
+        .style('font-size', '16px')
+        .style('font-weight', '500');
 
     // Axis labels
     g.append('text')
@@ -678,23 +704,25 @@ function drawDiversityIndex(g) {
         .attr('dy', '1em')
         .style('text-anchor', 'middle')
         .style('fill', '#eaeef3')
-        .style('font-size', '11px')
+        .style('font-size', '16px')
+        .style('font-weight', '600')
         .text('Diversity Score (%)');
 
     g.append('text')
-        .attr('transform', `translate(${width / 2}, ${height + margin.bottom + 5})`)
+        .attr('transform', `translate(${width / 2}, ${height + margin.bottom - 20})`)
         .style('text-anchor', 'middle')
         .style('fill', '#eaeef3')
-        .style('font-size', '11px')
+        .style('font-size', '16px')
+        .style('font-weight', '600')
         .text('Division');
 
     // Title
     g.append('text')
         .attr('x', width / 2)
-        .attr('y', -20)
+        .attr('y', -30)
         .attr('text-anchor', 'middle')
         .style('fill', '#f9fafb')
-        .style('font-size', '16px')
+        .style('font-size', '20px')
         .style('font-weight', 'bold')
         .text(`Diversity Index by Division (${currentMetric})`);
 

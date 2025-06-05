@@ -59,48 +59,12 @@
 }
 
 .viz-content {
-    max-width: 1750px;
+    max-width: 1450px;
     margin: 0 auto;
     padding: 2rem;
     display: grid;
-    grid-template-columns: 350px 1fr 300px;
+    grid-template-columns: 1fr 300px;
     gap: 2rem;
-}
-
-.insights-panel {
-    backdrop-filter: blur(20px);
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    padding: 2rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    height: 830px;
-    overflow-y: auto;
-}
-
-.insights-panel h3 {
-    color: #f9fafb;
-    font-size: 1.1rem;
-    margin-bottom: 1.5rem;
-    font-weight: 600;
-    text-align: center;
-}
-
-.insight-item {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 12px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    color: #d1d5db;
-    font-size: 0.85rem;
-    line-height: 1.4;
-}
-
-.insight-item strong {
-    color: #f9fafb;
-    display: block;
-    margin-bottom: 0.5rem;
 }
 
 .main-viz {
@@ -125,25 +89,21 @@
 }
 
 /* Custom scrollbar for controls panel */
-.controls-panel::-webkit-scrollbar,
-.insights-panel::-webkit-scrollbar {
+.controls-panel::-webkit-scrollbar {
     width: 8px;
 }
 
-.controls-panel::-webkit-scrollbar-track,
-.insights-panel::-webkit-scrollbar-track {
+.controls-panel::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 4px;
 }
 
-.controls-panel::-webkit-scrollbar-thumb,
-.insights-panel::-webkit-scrollbar-thumb {
+.controls-panel::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.3);
     border-radius: 4px;
 }
 
-.controls-panel::-webkit-scrollbar-thumb:hover,
-.insights-panel::-webkit-scrollbar-thumb:hover {
+.controls-panel::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.5);
 }
 
@@ -252,11 +212,43 @@
     border-color: rgba(255, 255, 255, 0.4);
 }
 
+.color-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: #d1d5db;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.legend-label {
+    font-size: 0.75rem;
+    color: #d1d5db;
+    white-space: nowrap;
+}
+
+.legend-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0rem;
+}
+
 .boxplot-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-top: 4rem;
 }
 
 .boxplot-chart {
@@ -413,11 +405,6 @@ input[type="range"] {
     .viz-content {
         grid-template-columns: 1fr;
         gap: 1.5rem;
-    }
-    
-    .insights-panel {
-        order: -1;
-        height: auto;
     }
     
     .controls-panel {
