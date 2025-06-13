@@ -351,19 +351,19 @@ class IntersectionalAnalysis {
         // Add axis labels
         this.chartGroup.append('text')
             .attr('x', this.width / 2)
-            .attr('y', this.height + 45)
+            .attr('y', this.height + 65)
             .attr('text-anchor', 'middle')
             .style('fill', '#d1d5db')
-            .style('font-size', '12px')
+            .style('font-size', '16px')
             .text(config.xLabel);
         
         this.chartGroup.append('text')
             .attr('transform', 'rotate(-90)')
-            .attr('y', -45)
+            .attr('y', -85)
             .attr('x', -this.height / 2)
             .attr('text-anchor', 'middle')
             .style('fill', '#d1d5db')
-            .style('font-size', '12px')
+            .style('font-size', '16px')
             .text(config.yLabel);
         
         // Add reference lines if needed
