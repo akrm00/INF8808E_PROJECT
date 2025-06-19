@@ -34,6 +34,28 @@
     color: #808080;
 }
 
+.back-home-btn {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #d1d5db !important;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.back-home-btn:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #f9fafb !important;
+    transform: translateY(-1px);
+}
+
 .viz-header {
     backdrop-filter: blur(20px);
     background: rgba(255, 255, 255, 0.05);
