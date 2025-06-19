@@ -355,7 +355,6 @@ body::before {
     text-decoration: none;
     font-weight: 500;
     transition: all 0.3s ease;
-    margin-bottom: 2rem;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
